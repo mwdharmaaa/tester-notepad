@@ -17,12 +17,6 @@ REQUIRED_FILES=(
   "background/background.js"
   "content/content.js"
   "content/content.css"
-  "newtab/newtab.html"
-  "newtab/newtab.css"
-  "newtab/newtab.js"
-  "sidepanel/sidepanel.html"
-  "sidepanel/sidepanel.css"
-  "sidepanel/sidepanel.js"
   "popup/popup.html"
   "popup/popup.css"
   "popup/popup.js"
@@ -53,8 +47,6 @@ echo "[*] Validating JavaScript syntax..."
 JS_FILES=(
   "background/background.js"
   "content/content.js"
-  "newtab/newtab.js"
-  "sidepanel/sidepanel.js"
   "popup/popup.js"
 )
 for js in "${JS_FILES[@]}"; do
