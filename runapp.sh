@@ -31,9 +31,11 @@ DEV_PROFILE="${TEMP:-/tmp}/chrome-tester-notepad-dev"
 mkdir -p "$DEV_PROFILE"
 
 TEST_PAGE="file:///${SCRIPT_DIR}/test/test_page.html"
+DASH_PAGE="chrome://newtab"
 
 echo "[*] Launching Chrome with extension: ${SCRIPT_DIR}"
+echo "[*] Dashboard: ${DASH_PAGE}"
 echo "[*] Test page: ${TEST_PAGE}"
-"$CHROME_BIN" --load-extension="${SCRIPT_DIR}" --user-data-dir="${DEV_PROFILE}" --no-first-run --no-default-browser-check "${TEST_PAGE}" &
+"$CHROME_BIN" --load-extension="${SCRIPT_DIR}" --user-data-dir="${DEV_PROFILE}" --no-first-run --no-default-browser-check "${DASH_PAGE}" "${TEST_PAGE}" &
 
 echo "[OK] Chrome dispatched successfully in background."

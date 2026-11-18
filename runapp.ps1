@@ -38,8 +38,9 @@ if (-not (Test-Path $tempProfile)) {
 }
 
 $testPage = "file:///$($scriptDir.Replace('\', '/'))/test/test_page.html"
+$dashPage = "chrome://newtab"
 
 Write-Host "[*] Launching Chrome with unpacked extension..." -ForegroundColor Yellow
-Start-Process -FilePath $chromeBin -ArgumentList "--load-extension=`"$scriptDir`"", "--user-data-dir=`"$tempProfile`"", "--no-first-run", "--no-default-browser-check", "`"$testPage`""
+Start-Process -FilePath $chromeBin -ArgumentList "--load-extension=`"$scriptDir`"", "--user-data-dir=`"$tempProfile`"", "--no-first-run", "--no-default-browser-check", "`"$dashPage`"", "`"$testPage`""
 
 Write-Host "[OK] Chrome launched successfully." -ForegroundColor Green

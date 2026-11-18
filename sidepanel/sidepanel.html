@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tester Notepad - Side Panel</title>
+  <link rel="stylesheet" href="sidepanel.css">
+</head>
+<body class="theme-dark">
+  <div class="sp-container">
+    <!-- Header -->
+    <header class="sp-header">
+      <div class="sp-brand">
+        <div class="sp-brand-icon">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+          </svg>
+        </div>
+        <div>
+          <h1 class="sp-brand-title">TESTER NOTEPAD</h1>
+          <span class="sp-brand-sub">SIDE PANEL</span>
+        </div>
+      </div>
+      <button class="sp-btn-dash" id="sp-btn-open-dash" title="Open Full Chrome Dashboard">
+        DASHBOARD
+      </button>
+    </header>
+
+    <!-- Top Priority Tier: Server Codes (Beda Kasta) -->
+    <div class="sp-server-section">
+      <div class="sp-section-header">
+        <span class="sp-tag">TOP TIER</span>
+        <span class="sp-section-title">SERVER CODES</span>
+      </div>
+      <div class="sp-server-input-row">
+        <input type="text" id="sp-server-input" placeholder="Paste server code / host / URL..." />
+        <button class="sp-btn" id="sp-btn-add-server">+ ADD</button>
+      </div>
+      <div class="sp-server-list" id="sp-server-list">
+        <!-- Injected via JS -->
+      </div>
+    </div>
+
+    <!-- Tabs: Credentials / Scratchpad / Generators -->
+    <div class="sp-tabs">
+      <button class="sp-tab active" data-tab="credentials">EMAILS</button>
+      <button class="sp-tab" data-tab="scratchpad">SCRATCHPAD</button>
+      <button class="sp-tab" data-tab="generators">DUMMY</button>
+    </div>
+
+    <!-- Body Area -->
+    <div class="sp-body">
+      <!-- Tab 1: Credentials -->
+      <div class="sp-tab-content active" id="tab-credentials">
+        <div class="sp-cred-toolbar">
+          <input type="text" id="sp-cred-search" placeholder="Search email..." />
+          <button class="sp-btn" id="sp-btn-add-cred">+ NEW</button>
+        </div>
+
+        <!-- Add Credential Form -->
+        <div class="sp-add-form" id="sp-add-form" style="display: none;">
+          <input type="email" id="sp-new-email" placeholder="Email address..." />
+          <div class="sp-pass-row">
+            <input type="text" id="sp-new-pass" placeholder="Password..." />
+            <button type="button" class="sp-btn-mini" id="sp-btn-gen-pass">GEN</button>
+          </div>
+          <div class="sp-form-actions">
+            <button class="sp-btn sp-btn-primary" id="sp-btn-save-cred">SAVE</button>
+            <button class="sp-btn" id="sp-btn-cancel-cred">CANCEL</button>
+          </div>
+        </div>
+
+        <div class="sp-cred-list" id="sp-cred-list">
+          <!-- Injected via JS -->
+        </div>
+      </div>
+
+      <!-- Tab 2: Scratchpad -->
+      <div class="sp-tab-content" id="tab-scratchpad">
+        <div class="sp-scratchpad-toolbar">
+          <button class="sp-btn" id="sp-btn-copy-scratch">COPY ALL</button>
+          <button class="sp-btn" id="sp-btn-clear-scratch">CLEAR</button>
+        </div>
+        <textarea id="sp-scratchpad-input" placeholder="Type temporary notes, OTP codes, bearer tokens..."></textarea>
+      </div>
+
+      <!-- Tab 3: Generators -->
+      <div class="sp-tab-content" id="tab-generators">
+        <div class="sp-gen-list">
+          <button class="sp-gen-btn" data-gen="email">
+            <b>Random Email</b>
+            <span>tester.&lt;rnd&gt;@testmail.local</span>
+          </button>
+          <button class="sp-gen-btn" data-gen="password">
+            <b>Strong Password</b>
+            <span>12-char secure combo</span>
+          </button>
+          <button class="sp-gen-btn" data-gen="phone">
+            <b>Phone Number</b>
+            <span>0812xxxxxxxx (ID)</span>
+          </button>
+          <button class="sp-gen-btn" data-gen="nik">
+            <b>NIK / KTP Dummy</b>
+            <span>16-digit valid format</span>
+          </button>
+          <button class="sp-gen-btn" data-gen="card">
+            <b>Test Visa Card</b>
+            <span>4242 4242 4242 4242</span>
+          </button>
+          <button class="sp-gen-btn" data-gen="uuid">
+            <b>UUID v4</b>
+            <span>xxxxxxxx-xxxx-4xxx-yxxx...</span>
+          </button>
+          <button class="sp-gen-btn" data-gen="lorem">
+            <b>Lorem Ipsum</b>
+            <span>Short test text</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="sp-toast" class="sp-toast" style="display: none;"></div>
+
+  <script src="sidepanel.js"></script>
+</body>
+</html>

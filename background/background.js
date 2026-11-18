@@ -1,5 +1,5 @@
 // Tester Notepad - Background Service Worker
-// Manages initial data seeding, commands, tab messaging, and unified drawer invocation
+// Manages initial data seeding, commands, tab messaging, unified drawer, and Chrome Dashboard
 
 const DEFAULT_SERVERS = [
   {
@@ -42,7 +42,7 @@ const DEFAULT_SETTINGS = {
 };
 
 chrome.runtime.onInstalled.addListener(async (details) => {
-  console.log("[Tester Notepad] Extension installed:", details.reason);
+  console.log("[Tester Notepad] Extension installed/updated:", details.reason);
   const data = await chrome.storage.local.get(["accounts", "scratchpad", "settings", "serverCodes"]);
   
   // Seed Server Codes (Always Top Tier)
@@ -55,7 +55,7 @@ chrome.runtime.onInstalled.addListener(async (details) => {
     await chrome.storage.local.set({ accounts: DEFAULT_ACCOUNTS });
   } else {
     const cleaned = data.accounts.map(a => ({
-      id: a.id,
+      id: a.id || "acc_" + Math.random().toString(36).substring(2, 6),
       email: a.email || a.label || "",
       password: a.password || ""
     }));
@@ -72,16 +72,54 @@ chrome.runtime.onInstalled.addListener(async (details) => {
 });
 
 /**
+ * Open or Focus Chrome Dashboard Tab
+ */
+async function openOrFocusDashboard() {
+  const dashboardUrl = chrome.runtime.getURL("dashboard/dashboard.html");
+  try {
+    const tabs = await chrome.tabs.query({});
+    const existing = tabs.find(t => t.url && t.url.startsWith(dashboardUrl));
+    if (existing && existing.id) {
+      await chrome.tabs.update(existing.id, { active: true });
+      if (existing.windowId) {
+        await chrome.windows.update(existing.windowId, { focused: true });
+      }
+      return;
+    }
+    await chrome.tabs.create({ url: dashboardUrl });
+  } catch (err) {
+    console.error("[Tester Notepad] Failed to open dashboard:", err);
+  }
+}
+
+/**
+ * Check if a URL is restricted from content script injection
+ */
+function isRestrictedUrl(url) {
+  if (!url) return true;
+  return (
+    url.startsWith("chrome://") ||
+    url.startsWith("edge://") ||
+    url.startsWith("about:") ||
+    url.startsWith("chrome-extension://") ||
+    url.startsWith("view-source:")
+  );
+}
+
+/**
  * Unified Drawer Toggle
- * Dispatches TOGGLE_DRAWER to active tab. If content script is not yet injected
- * (e.g. extension was freshly loaded/reloaded), injects content script dynamically.
+ * Dispatches TOGGLE_DRAWER to active tab. If on restricted browser page (e.g. Chrome Dashboard),
+ * opens or focuses the extension's Chrome Dashboard tab instead.
  */
 async function toggleTabDrawer(tab) {
-  if (!tab?.id) return;
+  if (!tab?.id) {
+    await openOrFocusDashboard();
+    return;
+  }
 
-  // Don't inject on internal restricted browser pages
-  if (tab.url && (tab.url.startsWith("chrome://") || tab.url.startsWith("edge://") || tab.url.startsWith("about:"))) {
-    console.warn("[Tester Notepad] Cannot toggle drawer on restricted browser pages:", tab.url);
+  // On restricted browser pages (like native Chrome newtab / dashboard), open Chrome Dashboard tab!
+  if (isRestrictedUrl(tab.url)) {
+    await openOrFocusDashboard();
     return;
   }
 
@@ -102,30 +140,41 @@ async function toggleTabDrawer(tab) {
         chrome.tabs.sendMessage(tab.id, { action: "TOGGLE_DRAWER" }).catch(() => {});
       }, 150);
     } catch (injectErr) {
-      console.warn("[Tester Notepad] Dynamic injection failed:", injectErr);
+      console.warn("[Tester Notepad] Dynamic injection failed, fallback to dashboard tab:", injectErr);
+      await openOrFocusDashboard();
     }
   }
 }
 
-// 1. When extension icon in Chrome toolbar is clicked -> Toggle in-page drawer!
+// 1. When extension icon in Chrome toolbar is clicked:
+// - On normal pages -> toggle in-page drawer
+// - On restricted pages (newtab, settings, etc.) -> open/focus Chrome Dashboard
 chrome.action.onClicked.addListener(async (tab) => {
   await toggleTabDrawer(tab);
 });
 
-// 2. When keyboard shortcut (Alt+L) is triggered -> Toggle in-page drawer!
+// 2. When keyboard shortcut (Alt+L) is triggered:
 chrome.commands.onCommand.addListener(async (command) => {
   if (command === "toggle_drawer") {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (tab) {
       await toggleTabDrawer(tab);
+    } else {
+      await openOrFocusDashboard();
     }
   }
 });
 
-// Message listener
+// 3. Message listener
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === "PING") {
     sendResponse({ status: "PONG" });
+    return true;
+  }
+
+  if (message.action === "OPEN_DASHBOARD") {
+    openOrFocusDashboard();
+    sendResponse({ status: "OK" });
     return true;
   }
 });

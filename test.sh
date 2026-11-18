@@ -17,6 +17,12 @@ REQUIRED_FILES=(
   "background/background.js"
   "content/content.js"
   "content/content.css"
+  "dashboard/dashboard.html"
+  "dashboard/dashboard.css"
+  "dashboard/dashboard.js"
+  "sidepanel/sidepanel.html"
+  "sidepanel/sidepanel.css"
+  "sidepanel/sidepanel.js"
   "popup/popup.html"
   "popup/popup.css"
   "popup/popup.js"
@@ -44,7 +50,14 @@ fi
 
 echo ""
 echo "[*] Validating JavaScript syntax..."
-for js in background/background.js content/content.js popup/popup.js; do
+JS_FILES=(
+  "background/background.js"
+  "content/content.js"
+  "dashboard/dashboard.js"
+  "sidepanel/sidepanel.js"
+  "popup/popup.js"
+)
+for js in "${JS_FILES[@]}"; do
   if node -c "$js" 2>/dev/null || true; then
     echo "[OK] Syntax check passed: $js"
   fi

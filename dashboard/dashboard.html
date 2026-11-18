@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chrome Dashboard - Tester Notepad</title>
+  <link rel="stylesheet" href="dashboard.css">
+  <link rel="icon" type="image/png" sizes="32x32" href="../icons/icon32.png">
+</head>
+<body class="theme-dark">
+  <div class="dash-wrapper">
+    <!-- Header -->
+    <header class="dash-header">
+      <div class="dash-brand">
+        <div class="dash-brand-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+          </svg>
+        </div>
+        <div>
+          <h1 class="dash-brand-title">TESTER NOTEPAD</h1>
+          <span class="dash-brand-sub">CHROME WORKSPACE DASHBOARD</span>
+        </div>
+      </div>
+
+      <!-- Clock & Date -->
+      <div class="dash-clock-block">
+        <div class="dash-time" id="dash-live-time">00:00:00</div>
+        <div class="dash-date" id="dash-live-date">Loading...</div>
+      </div>
+
+      <!-- Header Quick Actions -->
+      <div class="dash-header-actions">
+        <button class="btn btn-secondary" id="btn-theme-toggle" title="Toggle Light/Dark Theme">
+          <span id="theme-label">LIGHT</span>
+        </button>
+        <button class="btn btn-secondary" id="btn-open-sandbox" title="Open Test Sandbox Portal">
+          SANDBOX
+        </button>
+        <button class="btn btn-secondary" id="btn-export-backup" title="Export Backup JSON">
+          EXPORT
+        </button>
+        <label class="btn btn-secondary btn-file-label" title="Import Backup JSON">
+          IMPORT
+          <input type="file" id="input-import-backup" accept=".json" style="display: none;">
+        </label>
+        <button class="btn btn-danger-ghost" id="btn-reset-demo" title="Reset to Default Demo Data">
+          RESET
+        </button>
+      </div>
+    </header>
+
+    <!-- Omnibox Search Section -->
+    <section class="dash-search-section">
+      <form class="search-form" id="dash-search-form">
+        <div class="search-input-box">
+          <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="text" id="dash-search-input" placeholder="Search Google or enter web address... (press '/' to focus)" autofocus autocomplete="off" />
+          <button type="submit" class="search-submit-btn">ENTER</button>
+        </div>
+      </form>
+
+      <!-- Quick Shortcuts -->
+      <div class="quick-shortcuts">
+        <a href="http://localhost:3000" class="shortcut-chip" target="_blank" rel="noopener">
+          <span class="chip-dot"></span>localhost:3000
+        </a>
+        <a href="http://localhost:8080" class="shortcut-chip" target="_blank" rel="noopener">
+          <span class="chip-dot"></span>localhost:8080
+        </a>
+        <a href="https://github.com" class="shortcut-chip" target="_blank" rel="noopener">
+          <span class="chip-dot"></span>GitHub
+        </a>
+        <a href="chrome://extensions" class="shortcut-chip" id="chip-chrome-ext">
+          <span class="chip-dot"></span>Extensions
+        </a>
+        <button class="shortcut-chip" id="chip-open-sandbox">
+          <span class="chip-dot"></span>Test Sandbox
+        </button>
+      </div>
+    </section>
+
+    <!-- Main Grid Workspace -->
+    <main class="dash-grid">
+      <!-- Column 1: Server Codes + Catatan Email & Password -->
+      <div class="grid-col col-main">
+        <!-- Top Priority Tier: Server Codes (Beda Kasta) -->
+        <section class="dash-card server-tier-card">
+          <div class="card-header">
+            <div class="card-header-left">
+              <span class="tier-tag">TOP TIER</span>
+              <h2 class="card-title">SERVER CODES</h2>
+            </div>
+            <span class="card-sub-badge" id="server-count-badge">0 SERVERS</span>
+          </div>
+          <div class="server-input-row">
+            <input type="text" id="dash-server-input" placeholder="Paste server code / host / API endpoint / staging URL..." />
+            <button class="btn btn-primary" id="btn-add-server">+ ADD SERVER</button>
+          </div>
+          <div class="server-list" id="dash-server-list">
+            <!-- Injected via JS -->
+          </div>
+        </section>
+
+        <!-- Credentials / Catatan Email Section -->
+        <section class="dash-card credentials-card">
+          <div class="card-header">
+            <div class="card-header-left">
+              <h2 class="card-title">CATATAN EMAIL &amp; KREDENSIAL</h2>
+              <span class="card-sub-badge" id="account-count-badge">0 ACCOUNTS</span>
+            </div>
+            <div class="card-actions">
+              <button class="btn btn-primary" id="btn-show-add-account">+ ADD EMAIL</button>
+              <button class="btn btn-secondary" id="btn-clear-all-accounts">CLEAR ALL</button>
+            </div>
+          </div>
+
+          <!-- Add Account Form (Collapsible) -->
+          <div class="add-account-panel" id="add-account-panel" style="display: none;">
+            <div class="panel-title">Add New Email Credential</div>
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label for="new-acc-email">EMAIL ADDRESS</label>
+                <input type="email" id="new-acc-email" placeholder="tester@company.com" autocomplete="off" />
+              </div>
+              <div class="form-group flex-1">
+                <div class="label-with-action">
+                  <label for="new-acc-pass">PASSWORD</label>
+                  <button type="button" class="label-link-btn" id="btn-gen-pass-for-add">GENERATE STRONG</button>
+                </div>
+                <input type="text" id="new-acc-pass" placeholder="Password or token..." autocomplete="off" />
+              </div>
+            </div>
+            <div class="form-actions">
+              <button class="btn btn-primary" id="btn-save-new-account">SAVE CREDENTIAL</button>
+              <button class="btn btn-secondary" id="btn-cancel-add-account">CANCEL</button>
+            </div>
+          </div>
+
+          <!-- Search Filter -->
+          <div class="filter-box">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" id="dash-account-search" placeholder="Filter catatan email (e.g. admin, qa, user)..." />
+            <button class="filter-clear-btn" id="btn-clear-filter" style="display: none;">&times;</button>
+          </div>
+
+          <!-- Accounts List -->
+          <div class="accounts-grid" id="dash-accounts-container">
+            <!-- Injected via JS -->
+          </div>
+        </section>
+      </div>
+
+      <!-- Column 2: Scratchpad & Dummy Generators -->
+      <div class="grid-col col-side">
+        <!-- Web Tester Scratchpad -->
+        <section class="dash-card scratchpad-card">
+          <div class="card-header">
+            <div class="card-header-left">
+              <h2 class="card-title">TESTER SCRATCHPAD</h2>
+            </div>
+            <div class="card-actions">
+              <button class="btn btn-secondary" id="btn-copy-scratchpad">COPY ALL</button>
+              <button class="btn btn-secondary" id="btn-clear-scratchpad">CLEAR</button>
+            </div>
+          </div>
+          <div class="scratchpad-body">
+            <textarea id="dash-scratchpad-input" placeholder="Type temporary notes, OTP codes, bearer tokens, staging URLs, or QA test scenarios here... (Auto-saves in real-time)"></textarea>
+          </div>
+          <div class="scratchpad-footer">
+            <span id="scratchpad-stat">0 chars &bull; 0 lines</span>
+            <span class="autosave-tag" id="scratchpad-status">SYNCED</span>
+          </div>
+        </section>
+
+        <!-- Instant Dummy Data Generators -->
+        <section class="dash-card generators-card">
+          <div class="card-header">
+            <h2 class="card-title">DUMMY DATA GENERATORS</h2>
+            <span class="card-sub-badge">1-CLICK COPY</span>
+          </div>
+          <div class="generators-grid">
+            <button class="generator-btn" data-gen="email">
+              <span class="gen-name">Random Email</span>
+              <span class="gen-val">tester.&lt;rnd&gt;@testmail.local</span>
+            </button>
+            <button class="generator-btn" data-gen="password">
+              <span class="gen-name">Strong Password</span>
+              <span class="gen-val">12-char secure combo</span>
+            </button>
+            <button class="generator-btn" data-gen="phone">
+              <span class="gen-name">Phone Number</span>
+              <span class="gen-val">0812xxxxxxxx (ID)</span>
+            </button>
+            <button class="generator-btn" data-gen="nik">
+              <span class="gen-name">NIK / KTP Dummy</span>
+              <span class="gen-val">16-digit valid format</span>
+            </button>
+            <button class="generator-btn" data-gen="card">
+              <span class="gen-name">Test Card (Visa)</span>
+              <span class="gen-val">4242 4242 4242 4242</span>
+            </button>
+            <button class="generator-btn" data-gen="uuid">
+              <span class="gen-name">UUID v4</span>
+              <span class="gen-val">xxxxxxxx-xxxx-4xxx-yxxx...</span>
+            </button>
+            <button class="generator-btn" data-gen="lorem">
+              <span class="gen-name">Lorem Ipsum</span>
+              <span class="gen-val">Short test paragraph</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- Drawer & Shortcut Info -->
+        <section class="dash-card shortcuts-card">
+          <div class="card-header">
+            <h2 class="card-title">ACCESS &amp; SHORTCUTS</h2>
+          </div>
+          <ul class="shortcuts-list">
+            <li>
+              <span class="shortcut-desc">Open / Close Drawer on Web Pages</span>
+              <kbd class="shortcut-key">Alt + L</kbd>
+            </li>
+            <li>
+              <span class="shortcut-desc">Focus Dashboard Omnibox Search</span>
+              <kbd class="shortcut-key">/</kbd>
+            </li>
+            <li>
+              <span class="shortcut-desc">Add New Credential</span>
+              <kbd class="shortcut-key">Alt + A</kbd>
+            </li>
+            <li>
+              <span class="shortcut-desc">Close Modal / Reset Filter</span>
+              <kbd class="shortcut-key">Escape</kbd>
+            </li>
+          </ul>
+        </section>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="dash-footer">
+      <span>TESTER NOTEPAD &bull; MANIFEST V3 &bull; SYNCHRONIZED STORAGE</span>
+      <span>READY FOR WEB TESTING &amp; CREDENTIAL MANAGEMENT</span>
+    </footer>
+  </div>
+
+  <!-- Edit Account Modal -->
+  <div class="modal-backdrop" id="edit-modal-backdrop" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">Edit Credential</h3>
+        <button class="modal-close-btn" id="btn-close-edit-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="edit-acc-id" />
+        <div class="form-group">
+          <label for="edit-acc-email">EMAIL ADDRESS</label>
+          <input type="email" id="edit-acc-email" />
+        </div>
+        <div class="form-group">
+          <div class="label-with-action">
+            <label for="edit-acc-pass">PASSWORD</label>
+            <button type="button" class="label-link-btn" id="btn-gen-pass-for-edit">GENERATE STRONG</button>
+          </div>
+          <input type="text" id="edit-acc-pass" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" id="btn-save-edit-account">SAVE CHANGES</button>
+        <button class="btn btn-secondary" id="btn-cancel-edit-account">CANCEL</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <script src="dashboard.js"></script>
+</body>
+</html>
