@@ -206,7 +206,11 @@
       </div>
 
       <div style="margin-top: 20px;">
-        <h3 style="font-size: 12px; margin-bottom: 8px; color: #a1a1aa; text-transform: uppercase;">Additional Fields for Dummy Data Testing:</h3>
+        <h3 style="font-size: 12px; margin-bottom: 8px; color: #a1a1aa; text-transform: uppercase;">Additional Fields for Dummy Data &amp; Server Testing:</h3>
+        <div class="form-group">
+          <label>Server Endpoint / Code (from Top-Tier Server slot)</label>
+          <input type="text" id="test-server" placeholder="Paste server code / URL here..." />
+        </div>
         <div class="form-group">
           <label>Phone Number (from Generators tab)</label>
           <input type="text" id="test-phone" placeholder="Paste generated phone here..." />
@@ -229,10 +233,11 @@
 
     const emailInput = document.getElementById("login-email");
     const passInput = document.getElementById("login-password");
+    const serverInput = document.getElementById("test-server");
     const phoneInput = document.getElementById("test-phone");
     const nikInput = document.getElementById("test-nik");
 
-    [emailInput, passInput, phoneInput, nikInput].forEach((input) => {
+    [emailInput, passInput, serverInput, phoneInput, nikInput].forEach((input) => {
       input.addEventListener("input", (e) => {
         logEvent(`INPUT on #${e.target.id}: value changed to "${e.target.type === 'password' ? '***' : e.target.value}"`);
       });

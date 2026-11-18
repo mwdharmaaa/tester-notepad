@@ -1,6 +1,13 @@
 // Tester Notepad - Background Service Worker
 // Manages initial data seeding, commands, and tab messaging
 
+const DEFAULT_SERVERS = [
+  {
+    id: "srv_1",
+    code: "https://staging-api.tester.local:8443"
+  }
+];
+
 const DEFAULT_ACCOUNTS = [
   {
     id: "acc_1",
@@ -36,12 +43,17 @@ const DEFAULT_SETTINGS = {
 
 chrome.runtime.onInstalled.addListener(async (details) => {
   console.log("[Tester Notepad] Extension installed:", details.reason);
-  const data = await chrome.storage.local.get(["accounts", "scratchpad", "settings"]);
+  const data = await chrome.storage.local.get(["accounts", "scratchpad", "settings", "serverCodes"]);
   
+  // Seed Server Codes (Always Top Tier)
+  if (!data.serverCodes || !Array.isArray(data.serverCodes) || data.serverCodes.length === 0) {
+    await chrome.storage.local.set({ serverCodes: DEFAULT_SERVERS });
+  }
+
+  // Seed Accounts
   if (!data.accounts || !Array.isArray(data.accounts) || data.accounts.length === 0) {
     await chrome.storage.local.set({ accounts: DEFAULT_ACCOUNTS });
   } else {
-    // If existing accounts have obsolete 'label' or 'role', strip them to keep it clean
     const cleaned = data.accounts.map(a => ({
       id: a.id,
       email: a.email || a.label || "",
@@ -50,6 +62,7 @@ chrome.runtime.onInstalled.addListener(async (details) => {
     await chrome.storage.local.set({ accounts: cleaned });
   }
 
+  // Seed Notes & Settings
   if (typeof data.scratchpad !== "string") {
     await chrome.storage.local.set({ scratchpad: DEFAULT_NOTES });
   }

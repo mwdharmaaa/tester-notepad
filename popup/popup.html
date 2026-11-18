@@ -21,7 +21,7 @@
         </div>
         <div>
           <h1 class="brand-title">TESTER NOTEPAD</h1>
-          <span class="brand-subtitle">QA CREDENTIAL MANAGER</span>
+          <span class="brand-subtitle">QA WORKSPACE</span>
         </div>
       </div>
       <button class="open-tab-btn" id="btn-toggle-page-drawer" title="Toggle On-Page Drawer">
@@ -29,9 +29,30 @@
       </button>
     </header>
 
-    <!-- Search -->
+    <!-- Top Priority Tier: Server Codes (Beda Kasta) -->
+    <div class="server-box">
+      <div class="server-box-header">
+        <span class="server-box-title">SERVER CODES</span>
+        <span class="server-box-badge">TOP TIER</span>
+      </div>
+      <div class="server-input-row">
+        <input type="text" id="popup-server-input" placeholder="Paste server code / host / URL..." />
+        <button class="btn-copy" id="popup-btn-add-server">+ Add</button>
+      </div>
+      <div class="server-scroll" id="popup-server-container">
+        <!-- Injected via JS -->
+      </div>
+    </div>
+
+    <div class="tier-separator"></div>
+
+    <div class="section-tag-row">
+      <span>CREDENTIALS</span>
+    </div>
+
+    <!-- Search Credentials -->
     <div class="search-bar">
-      <input type="text" id="popup-search" placeholder="Search email or label..." />
+      <input type="text" id="popup-search" placeholder="Search email..." />
     </div>
 
     <!-- Accounts List -->

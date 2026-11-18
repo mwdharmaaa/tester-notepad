@@ -1,7 +1,7 @@
 /**
  * Tester Notepad - Content Script
  * Strictly Monochrome Minimalist UI (Black, White, Grays) - Zero Emojis
- * Pure Email & Password Fast Copy (No arbitrary labels / roles)
+ * Pinned Top-Tier Server Codes Slot ("Beda Kasta") + Email & Password Cards
  * Encapsulated via Shadow DOM for 100% style isolation.
  */
 
@@ -10,11 +10,13 @@
   if (document.getElementById("tester-notepad-root")) return;
 
   const ROOT_ID = "tester-notepad-root";
+  const STORAGE_KEY_SERVERS = "serverCodes";
   const STORAGE_KEY_ACCOUNTS = "accounts";
   const STORAGE_KEY_SCRATCHPAD = "scratchpad";
   const STORAGE_KEY_SETTINGS = "settings";
 
   // State
+  let serverCodes = [];
   let accounts = [];
   let scratchpad = "";
   let settings = {
@@ -52,12 +54,15 @@
   async function loadData() {
     try {
       const data = await chrome.storage.local.get([
+        STORAGE_KEY_SERVERS,
         STORAGE_KEY_ACCOUNTS,
         STORAGE_KEY_SCRATCHPAD,
         STORAGE_KEY_SETTINGS
       ]);
+      if (Array.isArray(data.serverCodes)) {
+        serverCodes = data.serverCodes;
+      }
       if (Array.isArray(data.accounts)) {
-        // Strip legacy labels/roles/notes to keep it purely Email & Password
         accounts = data.accounts.map((a) => ({
           id: a.id,
           email: a.email || a.label || "",
@@ -72,6 +77,12 @@
   }
 
   // Save Storage
+  async function saveServers(newServers) {
+    serverCodes = newServers;
+    await chrome.storage.local.set({ [STORAGE_KEY_SERVERS]: serverCodes });
+    render();
+  }
+
   async function saveAccounts(newAccounts) {
     accounts = newAccounts;
     await chrome.storage.local.set({ [STORAGE_KEY_ACCOUNTS]: accounts });
@@ -93,6 +104,10 @@
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area === "local") {
       let shouldRerender = false;
+      if (changes.serverCodes) {
+        serverCodes = changes.serverCodes.newValue || [];
+        shouldRerender = true;
+      }
       if (changes.accounts) {
         const raw = changes.accounts.newValue || [];
         accounts = raw.map((a) => ({
@@ -363,7 +378,7 @@
         position: fixed;
         top: 0;
         right: 0;
-        width: 390px;
+        width: 395px;
         max-width: calc(100vw - 16px);
         height: 100vh;
         background: #09090b;
@@ -533,6 +548,134 @@
         border-radius: 2px;
       }
 
+      /* ========================================================
+         SERVER CODES SECTION (ALWAYS PINNED TOP TIER - BEDA KASTA)
+         ======================================================== */
+      .tn-server-section {
+        background: #111113;
+        border: 1px solid #3f3f46;
+        border-radius: 6px;
+        padding: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+      }
+      .tn-theme-light .tn-server-section {
+        background: #f4f4f5;
+        border-color: #d4d4d8;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      }
+      .tn-server-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .tn-server-title {
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.6px;
+        text-transform: uppercase;
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .tn-theme-light .tn-server-title {
+        color: #09090b;
+      }
+      .tn-server-badge {
+        font-size: 8px;
+        font-weight: 800;
+        background: #ffffff;
+        color: #09090b;
+        padding: 1px 5px;
+        border-radius: 2px;
+        letter-spacing: 0.4px;
+        text-transform: uppercase;
+      }
+      .tn-theme-light .tn-server-badge {
+        background: #09090b;
+        color: #ffffff;
+      }
+      .tn-server-input-row {
+        display: flex;
+        gap: 6px;
+      }
+      .tn-server-input {
+        flex: 1;
+        background: #09090b;
+        border: 1px solid #27272a;
+        border-radius: 4px;
+        color: #ffffff;
+        font-family: ui-monospace, SFMono-Regular, monospace;
+        font-size: 11px;
+        padding: 6px 8px;
+        outline: none;
+        transition: border-color 0.15s;
+      }
+      .tn-theme-light .tn-server-input {
+        background: #ffffff;
+        border-color: #e4e4e7;
+        color: #09090b;
+      }
+      .tn-server-input:focus {
+        border-color: #ffffff;
+      }
+      .tn-theme-light .tn-server-input:focus {
+        border-color: #09090b;
+      }
+      .tn-server-list {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .tn-server-item {
+        background: #09090b;
+        border: 1px solid #27272a;
+        border-left: 3px solid #ffffff;
+        border-radius: 4px;
+        padding: 6px 8px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+      .tn-theme-light .tn-server-item {
+        background: #ffffff;
+        border-color: #e4e4e7;
+        border-left: 3px solid #09090b;
+      }
+      .tn-server-code {
+        font-family: ui-monospace, SFMono-Regular, monospace;
+        font-size: 11px;
+        color: #f4f4f5;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        flex: 1;
+      }
+      .tn-theme-light .tn-server-code {
+        color: #09090b;
+      }
+
+      /* Divider & Section Label */
+      .tn-tier-divider {
+        height: 1px;
+        background: #27272a;
+        margin: 4px 0 2px 0;
+      }
+      .tn-theme-light .tn-tier-divider {
+        background: #e4e4e7;
+      }
+      .tn-section-label {
+        font-size: 10px;
+        font-weight: 700;
+        color: #71717a;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
       /* Toolbar */
       .tn-toolbar {
         display: flex;
@@ -633,6 +776,33 @@
         background: #ffffff !important;
         color: #09090b !important;
         border-color: #ffffff !important;
+      }
+
+      .tn-btn-delete {
+        background: #18181b;
+        color: #a1a1aa;
+        border: 1px solid #27272a;
+        border-radius: 4px;
+        padding: 4px 8px;
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.15s, border-color 0.15s, color 0.15s;
+        white-space: nowrap;
+      }
+      .tn-theme-light .tn-btn-delete {
+        background: #f4f4f5;
+        border-color: #e4e4e7;
+        color: #71717a;
+      }
+      .tn-btn-delete:hover {
+        background: #27272a;
+        color: #ffffff;
+        border-color: #52525b;
+      }
+      .tn-theme-light .tn-btn-delete:hover {
+        background: #e4e4e7;
+        color: #09090b;
       }
 
       .tn-btn-ghost {
@@ -764,33 +934,6 @@
         background: #09090b;
         color: #ffffff;
         border-color: #09090b;
-      }
-
-      .tn-btn-delete {
-        background: #18181b;
-        color: #a1a1aa;
-        border: 1px solid #27272a;
-        border-radius: 4px;
-        padding: 4px 8px;
-        font-size: 11px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: background 0.15s, border-color 0.15s, color 0.15s;
-        white-space: nowrap;
-      }
-      .tn-theme-light .tn-btn-delete {
-        background: #f4f4f5;
-        border-color: #e4e4e7;
-        color: #71717a;
-      }
-      .tn-btn-delete:hover {
-        background: #27272a;
-        color: #ffffff;
-        border-color: #52525b;
-      }
-      .tn-theme-light .tn-btn-delete:hover {
-        background: #e4e4e7;
-        color: #09090b;
       }
 
       /* Inline Form (Email & Password Only) */
@@ -1023,6 +1166,8 @@
       return acc.email.toLowerCase().includes(q);
     });
 
+    const totalCount = serverCodes.length + accounts.length;
+
     shadow.innerHTML = `
       <style>${getStyles()}</style>
       <div class="${themeClass}">
@@ -1032,7 +1177,7 @@
             ? `
           <div class="tn-trigger-btn" id="tn-trigger" title="Tester Notepad (Alt+L)">
             ${Icons.doc}
-            <div class="tn-trigger-badge">${accounts.length}</div>
+            <div class="tn-trigger-badge">${totalCount}</div>
           </div>
         `
             : ""
@@ -1097,7 +1242,59 @@
   function renderTabContent(filteredAccounts) {
     if (activeTab === "credentials") {
       return `
-        <!-- Toolbar -->
+        <!-- ========================================================
+             SERVER CODES SECTION (ALWAYS PINNED TOP TIER - BEDA KASTA)
+             ======================================================== -->
+        <div class="tn-server-section">
+          <div class="tn-server-header">
+            <span class="tn-server-title">
+              SERVER CODES
+              <span class="tn-server-badge">TOP TIER</span>
+            </span>
+          </div>
+
+          <!-- Input Slot to Paste Server Code -->
+          <div class="tn-server-input-row">
+            <input 
+              type="text" 
+              class="tn-server-input" 
+              id="tn-server-input" 
+              placeholder="Paste server code / host / URL..." 
+            />
+            <button class="tn-btn-primary" id="tn-btn-add-server">+ Add</button>
+          </div>
+
+          <!-- Server Slots List -->
+          <div class="tn-server-list">
+            ${
+              serverCodes.length === 0
+                ? `<div style="color: #71717a; font-size: 11px; padding: 2px;">No server codes saved. Paste code above.</div>`
+                : serverCodes
+                    .map(
+                      (srv) => `
+                <div class="tn-server-item" data-id="${srv.id}">
+                  <span class="tn-server-code" title="${escapeHtml(srv.code)}">${escapeHtml(srv.code)}</span>
+                  <div class="tn-field-buttons">
+                    <button class="tn-btn-secondary tn-copy-server-btn" data-text="${escapeHtml(srv.code)}">
+                      Copy
+                    </button>
+                    <button class="tn-btn-delete tn-del-server-btn" data-id="${srv.id}" title="Delete server code">
+                      Del
+                    </button>
+                  </div>
+                </div>
+              `
+                    )
+                    .join("")
+            }
+          </div>
+        </div>
+
+        <div class="tn-tier-divider"></div>
+
+        <div class="tn-section-label">CREDENTIALS (EMAIL &amp; PASSWORD)</div>
+
+        <!-- Credentials Toolbar -->
         <div class="tn-toolbar">
           <div class="tn-search-box">
             <span class="tn-search-icon">${Icons.search}</span>
@@ -1150,7 +1347,7 @@
         <div class="tn-card-list">
           ${
             filteredAccounts.length === 0
-              ? `<div style="text-align: center; color: #71717a; font-size: 12px; padding: 24px;">No credentials found. Click '+ Add' to save one.</div>`
+              ? `<div style="text-align: center; color: #71717a; font-size: 12px; padding: 20px;">No credentials found. Click '+ Add' to save one.</div>`
               : filteredAccounts
                   .map((acc) => {
                     const isVisible = !!showPasswords[acc.id];
@@ -1386,7 +1583,62 @@
       });
     });
 
-    // Search Input
+    // ==========================================
+    // SERVER CODES EVENT HANDLERS (TOP TIER)
+    // ==========================================
+    const addServerBtn = shadow.getElementById("tn-btn-add-server");
+    const serverInput = shadow.getElementById("tn-server-input");
+
+    const handleAddServer = async () => {
+      if (!serverInput) return;
+      const code = serverInput.value.trim();
+      if (!code) {
+        showToast("Enter server code", "error");
+        return;
+      }
+      const newServer = {
+        id: "srv_" + Date.now(),
+        code
+      };
+      await saveServers([...serverCodes, newServer]);
+      showToast("Server code added", "success");
+    };
+
+    if (addServerBtn) {
+      addServerBtn.addEventListener("click", handleAddServer);
+    }
+    if (serverInput) {
+      serverInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          handleAddServer();
+        }
+      });
+    }
+
+    // Copy Server Code
+    shadow.querySelectorAll(".tn-copy-server-btn").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        const text = e.currentTarget.getAttribute("data-text");
+        copyToClipboard(text, "Server code copied");
+        e.currentTarget.classList.add("tn-copied");
+        setTimeout(() => e.currentTarget.classList.remove("tn-copied"), 600);
+      });
+    });
+
+    // Delete Server Code
+    shadow.querySelectorAll(".tn-del-server-btn").forEach((btn) => {
+      btn.addEventListener("click", async (e) => {
+        const id = e.currentTarget.getAttribute("data-id");
+        const updated = serverCodes.filter((s) => s.id !== id);
+        await saveServers(updated);
+        showToast("Server code deleted", "info");
+      });
+    });
+
+    // ==========================================
+    // CREDENTIALS EVENT HANDLERS
+    // ==========================================
     const searchInput = shadow.getElementById("tn-search-input");
     if (searchInput) {
       searchInput.addEventListener("input", (e) => {
@@ -1611,6 +1863,7 @@
     if (exportBtn) {
       exportBtn.addEventListener("click", () => {
         const exportData = {
+          serverCodes,
           accounts,
           scratchpad,
           settings,
@@ -1639,6 +1892,9 @@
         reader.onload = async (event) => {
           try {
             const imported = JSON.parse(event.target.result);
+            if (Array.isArray(imported.serverCodes)) {
+              await saveServers(imported.serverCodes);
+            }
             if (Array.isArray(imported.accounts)) {
               const cleaned = imported.accounts.map((a) => ({
                 id: a.id || "acc_" + Math.random().toString(36).substring(2, 7),
@@ -1667,7 +1923,13 @@
     const resetBtn = shadow.getElementById("tn-btn-reset-data");
     if (resetBtn) {
       resetBtn.addEventListener("click", async () => {
-        if (confirm("Reset to default demo accounts?")) {
+        if (confirm("Reset to default demo data?")) {
+          const DEFAULT_SERVERS = [
+            {
+              id: "srv_1",
+              code: "https://staging-api.tester.local:8443"
+            }
+          ];
           const DEFAULT_ACCOUNTS = [
             {
               id: "acc_1",
@@ -1685,6 +1947,7 @@
               password: "QAPassword99!"
             }
           ];
+          await saveServers(DEFAULT_SERVERS);
           await saveAccounts(DEFAULT_ACCOUNTS);
           showToast("Reset completed", "info");
           render();

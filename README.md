@@ -17,22 +17,28 @@
    - Terisolasi 100% menggunakan **Shadow DOM**, sehingga styling extension tidak terpengaruh oleh CSS website tujuan (Bootstrap, Tailwind, reset CSS) dan tidak merusak layout halaman yang sedang di-test.
    - Dilengkapi tombol **Pin** (agar drawer tetap terbuka saat mengetik di form) dan tombol **Close**.
 
-3. **Fast Copy Email & Password:**
+3. **Top Priority Tier: Server Codes (Beda Kasta):**
+   - Slot khusus di bagian **paling atas** untuk paste code server / endpoint / URL / host port.
+   - Terpisah secara kasta & protokol dari Email & Password (tidak akan pernah berada di bawah Email & Password).
+   - Tombol **Copy** instan dan tombol **Del** untuk setiap server code yang disimpan.
+
+4. **Fast Copy Email & Password:**
    - Tombol **Copy** pada Email: Salin email ke clipboard dalam satu klik.
    - Tombol **Copy** pada Password: Salin password ke clipboard dalam satu klik.
    - Tombol **Show/Hide**: Menampilkan/menyembunyikan teks password.
+   - Tombol **Delete** eksplisit di tiap akun dan **Clear All** di toolbar atas.
    - Feedback toast minimalis saat penyalinan berhasil.
 
-4. **One-Click Autofill Form:**
+5. **One-Click Autofill Form:**
    - Deteksi otomatis elemen input username/email dan password pada halaman web aktif.
    - Mengisi kredensial secara langsung dan memicu event `input`, `change`, dan `blur` sehingga kompatibel dengan React, Vue, Angular, Svelte, dan standard HTML forms.
 
-5. **Web Tester Scratchpad:**
+6. **Web Tester Scratchpad:**
    - Area catatan fleksibel untuk menyimpan OTP sementara, Bearer Token, API response snippet, URL staging, atau skenario test.
    - Auto-save ke `chrome.storage.local` secara real-time.
    - Tombol satu klik **Copy All** dan **Clear**.
 
-6. **Dummy Data Generators:**
+7. **Dummy Data Generators:**
    - Salin instan data dummy uji coba:
      - **Random Test Email** (`tester.<timestamp>@testmail.local`)
      - **Strong Password** (12 karakter kombinasi huruf besar, kecil, angka, simbol)
@@ -42,7 +48,7 @@
      - **UUID v4**
      - **Lorem Ipsum Paragraph**
 
-7. **Backup & Restore (JSON):**
+8. **Backup & Restore (JSON):**
    - Ekspor seluruh akun dan catatan ke file JSON untuk dibagikan ke tim QA.
    - Impor file backup JSON kapan saja.
    - Opsi reset ke data akun default.
