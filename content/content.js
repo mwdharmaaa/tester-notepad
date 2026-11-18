@@ -999,7 +999,7 @@
         ${
           isIconVisible
             ? `
-          <div class="tn-trigger-btn" id="tn-trigger" title="Tester Notepad (Click or Alt+N)">
+          <div class="tn-trigger-btn" id="tn-trigger" title="Tester Notepad (Click or Alt+L / Alt+N)">
             <svg class="tn-trigger-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
               <polyline points="14 2 14 8 20 8"></polyline>
@@ -1325,7 +1325,7 @@
           <div class="tn-settings-group">
             <div class="tn-settings-title">Keyboard Shortcuts</div>
             <div style="font-size: 12px; color: #94a3b8; line-height: 1.6;">
-              • <b>Alt + N</b> : Toggle Tester Notepad Drawer<br/>
+              • <b>Alt + L</b> : Toggle Tester Notepad Drawer (atau <b>Alt + N</b>)<br/>
               • <b>Esc</b> : Close Drawer
             </div>
           </div>
@@ -1596,7 +1596,7 @@
         showToast(
           e.target.checked
             ? "Floating icon enabled"
-            : "Floating icon hidden (use Alt+N to open)",
+            : "Floating icon hidden (use Alt+L to open)",
           "info"
         );
       });
@@ -1711,8 +1711,8 @@
 
   // Global Keyboard Shortcuts
   window.addEventListener("keydown", (e) => {
-    // Alt + N to toggle
-    if (e.altKey && (e.key === "n" || e.key === "N")) {
+    // Alt + L or Alt + N to toggle
+    if (e.altKey && (e.key === "l" || e.key === "L" || e.key === "n" || e.key === "N")) {
       e.preventDefault();
       toggleDrawer();
     }

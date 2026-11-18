@@ -45,7 +45,7 @@
   "commands": {
     "toggle_drawer": {
       "suggested_key": {
-        "default": "Alt+N"
+        "default": "Alt+L"
       },
       "description": "Toggle Tester Notepad Drawer"
     }

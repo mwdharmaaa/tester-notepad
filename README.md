@@ -10,7 +10,7 @@
    - Icon melayang yang elegan di pojok kanan bawah layar.
    - Dilengkapi badge penghitung akun kredensial yang tersimpan.
    - Klik icon untuk membuka/menutup drawer notepad di sisi kanan layar.
-   - Shortcut keyboard: Tekan **`Alt + N`** untuk toggle drawer secara instan.
+   - Shortcut keyboard: Tekan **`Alt + L`** (atau `Alt + N`) untuk toggle drawer secara instan.
 
 2. **Slide-Out Right Drawer (Notepad Kanan Layar):**
    - Panel meluncur halus dari sisi kanan layar (`transform: translateX`).
@@ -114,5 +114,5 @@ cd space\project\tools\ext\tester-notepad
 
 | Shortcut | Deskripsi |
 | :--- | :--- |
-| **`Alt + N`** | Toggle Tester Notepad Drawer (Buka / Tutup panel) |
+| **`Alt + L`** (atau `Alt + N`) | Toggle Tester Notepad Drawer (Buka / Tutup panel) |
 | **`Esc`** | Menutup panel drawer (jika tidak di-pin) |
