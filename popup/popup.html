@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tester Notepad</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <!-- Header -->
+    <header class="popup-header">
+      <div class="brand">
+        <span class="brand-icon">📝</span>
+        <div>
+          <h1 class="brand-title">Tester Notepad</h1>
+          <span class="brand-subtitle">Quick Credentials & Scratchpad</span>
+        </div>
+      </div>
+      <button class="open-tab-btn" id="btn-toggle-page-drawer" title="Toggle On-Page Drawer">
+        ↗ Page Drawer
+      </button>
+    </header>
+
+    <!-- Search & Quick Action -->
+    <div class="search-bar">
+      <input type="text" id="popup-search" placeholder="Search email or account..." />
+    </div>
+
+    <!-- Accounts List -->
+    <div class="accounts-scroll" id="accounts-container">
+      <!-- Injected via JS -->
+    </div>
+
+    <!-- Quick Footer -->
+    <footer class="popup-footer">
+      <div class="toggle-row">
+        <span>In-Page Floating Icon</span>
+        <label class="switch">
+          <input type="checkbox" id="toggle-floating-icon">
+          <span class="slider round"></span>
+        </label>
+      </div>
+    </footer>
+  </div>
+
+  <div id="toast" class="toast">Copied!</div>
+  <script src="popup.js"></script>
+</body>
+</html>

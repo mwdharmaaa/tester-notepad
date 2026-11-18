@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tester Notepad - Web QA Verification Portal</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    body {
+      background: #0b0f19;
+      color: #f1f5f9;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      background: #111827;
+      border-bottom: 1px solid #1f2937;
+      padding: 18px 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .badge {
+      background: #4f46e5;
+      color: #fff;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    main {
+      flex: 1;
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 40px 20px;
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
+    }
+    @media (max-width: 768px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+    }
+    .panel {
+      background: #111827;
+      border: 1px solid #1f2937;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    }
+    h2 {
+      font-size: 18px;
+      margin-bottom: 8px;
+      color: #818cf8;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    p {
+      font-size: 13px;
+      color: #9ca3af;
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+    .form-group {
+      margin-bottom: 16px;
+    }
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: #d1d5db;
+      margin-bottom: 6px;
+    }
+    input[type="text"],
+    input[type="email"],
+    input[type="password"] {
+      width: 100%;
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: #fff;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    input:focus {
+      border-color: #6366f1;
+      box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+    }
+    .btn-submit {
+      width: 100%;
+      background: #4f46e5;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 12px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-submit:hover {
+      background: #4338ca;
+    }
+    .step-box {
+      background: #1a2234;
+      border-left: 4px solid #10b981;
+      padding: 12px 16px;
+      border-radius: 6px;
+      margin-bottom: 16px;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+    .log-box {
+      background: #030712;
+      border: 1px solid #1f2937;
+      border-radius: 8px;
+      padding: 12px;
+      font-family: monospace;
+      font-size: 11px;
+      color: #10b981;
+      max-height: 180px;
+      overflow-y: auto;
+    }
+    .callout {
+      margin-top: 24px;
+      padding: 14px;
+      background: rgba(99, 102, 241, 0.1);
+      border: 1px dashed rgba(99, 102, 241, 0.4);
+      border-radius: 8px;
+      font-size: 12px;
+      color: #cbd5e1;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1 style="font-size: 20px; font-weight: 700;">Web Tester Sandbox Portal</h1>
+      <span style="font-size: 12px; color: #9ca3af;">Tester Notepad Extension Testing Harness</span>
+    </div>
+    <span class="badge">E2E Test Environment</span>
+  </header>
+
+  <main>
+    <!-- Left Column: Instructions & Target Login Form -->
+    <section class="panel">
+      <h2>🔐 Target Login Form</h2>
+      <p>Use this form to test one-click copy, paste, and the autofill feature from Tester Notepad.</p>
+
+      <form id="login-form" onsubmit="event.preventDefault(); handleLoginSubmit();">
+        <div class="form-group">
+          <label for="login-email">Email or Username</label>
+          <input type="email" id="login-email" name="username" placeholder="e.g. admin@tester.local" autocomplete="username" required />
+        </div>
+
+        <div class="form-group">
+          <label for="login-password">Password</label>
+          <input type="password" id="login-password" name="password" placeholder="••••••••••••" autocomplete="current-password" required />
+        </div>
+
+        <button type="submit" class="btn-submit">Sign In (Test Verification)</button>
+      </form>
+
+      <div class="callout">
+        <b>💡 Cara Cek Flow:</b>
+        <ol style="margin-left: 20px; margin-top: 6px; line-height: 1.6;">
+          <li>Lihat icon 📝 kecil di <b>pojok kanan bawah</b> layar.</li>
+          <li>Klik icon tersebut, notepad drawer akan meluncur keluar dari <b>kanan layar</b>.</li>
+          <li>Klik tombol <b>📋 Copy</b> pada email atau <b>🔑 Copy</b> pada password untuk menyalin sekejap.</li>
+          <li>Atau klik <b>🪄 Autofill</b> untuk langsung mengisi input form ini secara otomatis!</li>
+          <li>Shortcut keyboard: Tekan <b>Alt + N</b> untuk toggle drawer kapan saja.</li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- Right Column: Verification Event Log -->
+    <section class="panel">
+      <h2>📊 Live Form Event Tracker</h2>
+      <p>Tracks input changes and paste events as you test.</p>
+
+      <div class="step-box">
+        <strong>Status:</strong> Ready for tester interaction.<br/>
+        Floating trigger button is active in the bottom right corner.
+      </div>
+
+      <div class="log-box" id="event-log">
+        [READY] Awaiting form events and clipboard actions...<br/>
+      </div>
+
+      <div style="margin-top: 20px;">
+        <h3 style="font-size: 14px; margin-bottom: 8px; color: #d1d5db;">Additional Fields for Dummy Data Testing:</h3>
+        <div class="form-group">
+          <label>Phone Number (from Generators tab)</label>
+          <input type="text" id="test-phone" placeholder="Paste generated phone here..." />
+        </div>
+        <div class="form-group">
+          <label>NIK / KTP 16-Digits (from Generators tab)</label>
+          <input type="text" id="test-nik" placeholder="Paste generated NIK here..." />
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    function logEvent(msg) {
+      const log = document.getElementById("event-log");
+      const time = new Date().toLocaleTimeString();
+      log.innerHTML += `[${time}] ${msg}<br/>`;
+      log.scrollTop = log.scrollHeight;
+    }
+
+    const emailInput = document.getElementById("login-email");
+    const passInput = document.getElementById("login-password");
+    const phoneInput = document.getElementById("test-phone");
+    const nikInput = document.getElementById("test-nik");
+
+    [emailInput, passInput, phoneInput, nikInput].forEach((input) => {
+      input.addEventListener("input", (e) => {
+        logEvent(`INPUT on #${e.target.id}: value changed to "${e.target.type === 'password' ? '***' : e.target.value}"`);
+      });
+      input.addEventListener("paste", (e) => {
+        logEvent(`PASTE detected on #${e.target.id}`);
+      });
+    });
+
+    function handleLoginSubmit() {
+      logEvent(`SUCCESS: Form submitted with Email: "${emailInput.value}"`);
+      alert(`Login Successful with credentials:\nEmail: ${emailInput.value}\nPassword: ${passInput.value.replace(/./g, '*')}`);
+    }
+  </script>
+</body>
+</html>

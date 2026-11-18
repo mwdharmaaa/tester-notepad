@@ -1,0 +1,53 @@
+{
+  "manifest_version": 3,
+  "name": "Tester Notepad - Web Tester Fast Copy",
+  "version": "1.0.0",
+  "description": "Floating bottom-right notepad and credential quick-copy drawer for web testers. Instant email/pw copy, autofill, and scratchpad.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "permissions": [
+    "storage",
+    "clipboardWrite"
+  ],
+  "action": {
+    "default_title": "Tester Notepad",
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "background": {
+    "service_worker": "background/background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "http://*/*",
+        "https://*/*",
+        "file:///*"
+      ],
+      "js": [
+        "content/content.js"
+      ],
+      "css": [
+        "content/content.css"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "commands": {
+    "toggle_drawer": {
+      "suggested_key": {
+        "default": "Alt+N"
+      },
+      "description": "Toggle Tester Notepad Drawer"
+    }
+  }
+}
