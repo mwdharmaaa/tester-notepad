@@ -1,5 +1,5 @@
 // Tester Notepad - Background Service Worker
-// Manages initial data seeding, commands, and tab messaging
+// Manages initial data seeding, commands, tab messaging, and unified drawer invocation
 
 const DEFAULT_SERVERS = [
   {
@@ -71,16 +71,58 @@ chrome.runtime.onInstalled.addListener(async (details) => {
   }
 });
 
-// Handle keyboard shortcut (Alt+L)
+/**
+ * Unified Drawer Toggle
+ * Dispatches TOGGLE_DRAWER to active tab. If content script is not yet injected
+ * (e.g. extension was freshly loaded/reloaded), injects content script dynamically.
+ */
+async function toggleTabDrawer(tab) {
+  if (!tab?.id) return;
+
+  // Don't inject on internal restricted browser pages
+  if (tab.url && (tab.url.startsWith("chrome://") || tab.url.startsWith("edge://") || tab.url.startsWith("about:"))) {
+    console.warn("[Tester Notepad] Cannot toggle drawer on restricted browser pages:", tab.url);
+    return;
+  }
+
+  try {
+    await chrome.tabs.sendMessage(tab.id, { action: "TOGGLE_DRAWER" });
+  } catch (err) {
+    // Content script not ready on this tab yet, dynamically inject then toggle
+    try {
+      await chrome.scripting.insertCSS({
+        target: { tabId: tab.id },
+        files: ["content/content.css"]
+      });
+      await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        files: ["content/content.js"]
+      });
+      setTimeout(() => {
+        chrome.tabs.sendMessage(tab.id, { action: "TOGGLE_DRAWER" }).catch(() => {});
+      }, 150);
+    } catch (injectErr) {
+      console.warn("[Tester Notepad] Dynamic injection failed:", injectErr);
+    }
+  }
+}
+
+// 1. When extension icon in Chrome toolbar is clicked -> Toggle in-page drawer!
+chrome.action.onClicked.addListener(async (tab) => {
+  await toggleTabDrawer(tab);
+});
+
+// 2. When keyboard shortcut (Alt+L) is triggered -> Toggle in-page drawer!
 chrome.commands.onCommand.addListener(async (command) => {
   if (command === "toggle_drawer") {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (tab?.id) {
-      chrome.tabs.sendMessage(tab.id, { action: "TOGGLE_DRAWER" }).catch(() => {});
+    if (tab) {
+      await toggleTabDrawer(tab);
     }
   }
 });
 
+// Message listener
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === "PING") {
     sendResponse({ status: "PONG" });

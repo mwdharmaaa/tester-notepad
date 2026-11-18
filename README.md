@@ -6,11 +6,13 @@
 
 ## Fitur Utama
 
-1. **Floating Trigger Icon (Pojok Kanan Bawah):**
-   - Icon melayang monokrom minimalis di pojok kanan bawah layar.
-   - Badge kontras tinggi menunjukkan jumlah akun tes yang tersimpan.
-   - Klik icon untuk membuka/menutup drawer notepad di sisi kanan layar.
-   - Shortcut keyboard: Tekan **`Alt + L`** (atau `Alt + N`) untuk toggle drawer secara instan.
+1. **Unified Drawer Access (1 Tampilan Seragam untuk Semua Cara Akses):**
+   - Tidak ada lagi popup terpisah yang membingungkan.
+   - Dengan cara apa pun ekstensi diakses:
+     - **Klik icon ekstensi di toolbar browser**
+     - **Tekan shortcut keyboard `Alt + L` (atau `Alt + N`)**
+     - **Klik icon floating di pojok kanan bawah**
+   - Semuanya langsung membuka **satu tampilan yang sama persis**: In-Page Drawer di sisi kanan layar!
 
 2. **Slide-Out Right Drawer (Notepad Kanan Layar):**
    - Panel meluncur halus dari sisi kanan layar (`transform: translateX`).
@@ -19,7 +21,7 @@
 
 3. **Top Priority Tier: Server Codes (Beda Kasta):**
    - Slot khusus di bagian **paling atas** untuk paste code server / endpoint / URL / host port.
-   - Terpisah secara kasta & protokol dari Email & Password (tidak akan pernah berada di bawah Email & Password).
+   - Terpisah secara kasta & protokol dari Email & Password (selalu di atas, tidak akan pernah berada di bawah Email & Password).
    - Tombol **Copy** instan dan tombol **Del** untuk setiap server code yang disimpan.
 
 4. **Fast Copy Email & Password:**
