@@ -20,6 +20,9 @@ REQUIRED_FILES=(
   "popup/popup.html"
   "popup/popup.css"
   "popup/popup.js"
+  "sidepanel/sidepanel.html"
+  "sidepanel/sidepanel.css"
+  "sidepanel/sidepanel.js"
   "test/test_page.html"
 )
 
@@ -48,6 +51,7 @@ JS_FILES=(
   "background/background.js"
   "content/content.js"
   "popup/popup.js"
+  "sidepanel/sidepanel.js"
 )
 for js in "${JS_FILES[@]}"; do
   if node -c "$js" 2>/dev/null || true; then

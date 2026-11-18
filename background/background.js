@@ -71,24 +71,72 @@ chrome.runtime.onInstalled.addListener(async (details) => {
   }
 });
 
+// Active Side Panel Port Tracker (windowId -> port)
+const activeSidePanelWindows = new Map();
+
+chrome.runtime.onConnect.addListener((port) => {
+  if (port.name === "tester-notepad-sidepanel") {
+    let boundWindowId = null;
+    port.onMessage.addListener((msg) => {
+      if (msg?.type === "SIDEPANEL_MOUNTED" && msg.windowId) {
+        boundWindowId = msg.windowId;
+        activeSidePanelWindows.set(boundWindowId, port);
+      }
+    });
+    port.onDisconnect.addListener(() => {
+      if (boundWindowId) {
+        activeSidePanelWindows.delete(boundWindowId);
+      }
+    });
+  }
+});
+
 /**
- * Unified Drawer Toggle
- * Dispatches TOGGLE_DRAWER directly to active tab. Never creates a new tab.
+ * Unified Drawer & Side Panel Toggle
+ * On chrome://newtab and internal pages: opens/toggles the native Chrome Side Panel on the right.
+ * On normal web pages: toggles the in-page floating drawer.
+ * Never creates new tabs or disrupts page clickability.
  */
 async function toggleTabDrawer(tab) {
   if (!tab?.id) return;
 
-  // Don't inject on internal restricted browser pages
-  if (tab.url && (tab.url.startsWith("chrome://") || tab.url.startsWith("edge://") || tab.url.startsWith("about:"))) {
-    console.warn("[Tester Notepad] Cannot toggle drawer on restricted browser pages:", tab.url);
+  const isInternalPage = !tab.url || 
+    tab.url.startsWith("chrome://") || 
+    tab.url.startsWith("edge://") || 
+    tab.url.startsWith("about:") || 
+    tab.url.startsWith("chrome-extension://");
+
+  if (isInternalPage) {
+    // Restricted Chrome Dashboard / Internal Page:
+    // Chrome prohibits content scripts on chrome:// pages, so we dock the
+    // native Chrome Side Panel directly to the right side of the Dashboard!
+    if (chrome.sidePanel && chrome.sidePanel.open) {
+      try {
+        const existingPort = activeSidePanelWindows.get(tab.windowId);
+        if (existingPort) {
+          // Toggle Off: close open side panel
+          existingPort.postMessage({ action: "CLOSE_PANEL" });
+          if (chrome.sidePanel.close) {
+            await chrome.sidePanel.close({ windowId: tab.windowId });
+          }
+          activeSidePanelWindows.delete(tab.windowId);
+        } else {
+          // Toggle On: open side panel docked right beside the dashboard
+          await chrome.sidePanel.open({ windowId: tab.windowId });
+        }
+      } catch (err) {
+        console.error("[Tester Notepad] Error toggling side panel on internal page:", err);
+      }
+    }
     return;
   }
 
+  // Normal Web Page: Dispatch TOGGLE_DRAWER to in-page content script
   try {
     const res = await chrome.tabs.sendMessage(tab.id, { action: "TOGGLE_DRAWER" });
     if (res?.status === "OK") return;
   } catch (err) {
-    // Content script not ready on this tab yet (e.g. extension just reloaded or tab opened before extension)
+    // Content script not ready on this tab yet, dynamically inject
     try {
       await chrome.scripting.insertCSS({
         target: { tabId: tab.id },
@@ -104,17 +152,22 @@ async function toggleTabDrawer(tab) {
         } catch (_) {}
       }, 100);
     } catch (injectErr) {
-      console.warn("[Tester Notepad] Dynamic injection failed:", injectErr);
+      console.warn("[Tester Notepad] Dynamic injection failed, fallback to side panel:", injectErr);
+      if (chrome.sidePanel && chrome.sidePanel.open) {
+        try {
+          await chrome.sidePanel.open({ windowId: tab.windowId });
+        } catch (_) {}
+      }
     }
   }
 }
 
-// 1. When extension icon in Chrome toolbar is clicked -> Toggle in-page drawer!
+// 1. When extension icon in Chrome toolbar is clicked
 chrome.action.onClicked.addListener(async (tab) => {
   await toggleTabDrawer(tab);
 });
 
-// 2. When keyboard shortcut (Alt+L) is triggered -> Toggle in-page drawer!
+// 2. When keyboard shortcut (Alt+L) is triggered
 chrome.commands.onCommand.addListener(async (command) => {
   if (command === "toggle_drawer") {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -124,10 +177,21 @@ chrome.commands.onCommand.addListener(async (command) => {
   }
 });
 
-// Message listener
+// Message listener for sub-components
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === "PING") {
     sendResponse({ status: "PONG" });
     return true;
+  }
+  if (message.action === "OPEN_SIDEPANEL") {
+    const windowId = sender.tab?.windowId;
+    if (windowId && chrome.sidePanel && chrome.sidePanel.open) {
+      chrome.sidePanel.open({ windowId }).then(() => {
+        sendResponse({ status: "OK" });
+      }).catch((e) => {
+        sendResponse({ status: "ERROR", error: e.message });
+      });
+      return true;
+    }
   }
 });

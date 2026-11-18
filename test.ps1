@@ -20,6 +20,9 @@ $requiredFiles = @(
   "popup/popup.html",
   "popup/popup.css",
   "popup/popup.js",
+  "sidepanel/sidepanel.html",
+  "sidepanel/sidepanel.css",
+  "sidepanel/sidepanel.js",
   "test/test_page.html"
 )
 

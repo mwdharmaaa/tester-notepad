@@ -13,11 +13,16 @@
     "storage",
     "clipboardWrite",
     "activeTab",
-    "scripting"
+    "scripting",
+    "sidePanel",
+    "tabs"
   ],
   "host_permissions": [
     "<all_urls>"
   ],
+  "side_panel": {
+    "default_path": "sidepanel/sidepanel.html"
+  },
   "action": {
     "default_title": "Tester Notepad (Click or Alt+L to toggle drawer)",
     "default_icon": {
