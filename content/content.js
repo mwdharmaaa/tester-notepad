@@ -1,6 +1,7 @@
 /**
  * Tester Notepad - Content Script
  * Strictly Monochrome Minimalist UI (Black, White, Grays) - Zero Emojis
+ * Pure Email & Password Fast Copy (No arbitrary labels / roles)
  * Encapsulated via Shadow DOM for 100% style isolation.
  */
 
@@ -37,16 +38,14 @@
   document.documentElement.appendChild(rootEl);
   const shadow = rootEl.attachShadow({ mode: "open" });
 
-  // Minimalist SVG Icons (Pure Line Geometry)
+  // Minimalist Line SVG Icons
   const Icons = {
     doc: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>`,
     close: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`,
     pin: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"></line><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a1 1 0 0 0 0-2H8a1 1 0 0 0 0 2h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"></path></svg>`,
     search: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>`,
     edit: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>`,
-    trash: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`,
-    copy: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`,
-    check: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`
+    trash: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`
   };
 
   // Load Initial Storage
@@ -57,7 +56,14 @@
         STORAGE_KEY_SCRATCHPAD,
         STORAGE_KEY_SETTINGS
       ]);
-      if (Array.isArray(data.accounts)) accounts = data.accounts;
+      if (Array.isArray(data.accounts)) {
+        // Strip legacy labels/roles/notes to keep it purely Email & Password
+        accounts = data.accounts.map((a) => ({
+          id: a.id,
+          email: a.email || a.label || "",
+          password: a.password || ""
+        }));
+      }
       if (typeof data.scratchpad === "string") scratchpad = data.scratchpad;
       if (data.settings) settings = Object.assign(settings, data.settings);
     } catch (e) {
@@ -88,7 +94,12 @@
     if (area === "local") {
       let shouldRerender = false;
       if (changes.accounts) {
-        accounts = changes.accounts.newValue || [];
+        const raw = changes.accounts.newValue || [];
+        accounts = raw.map((a) => ({
+          id: a.id,
+          email: a.email || a.label || "",
+          password: a.password || ""
+        }));
         shouldRerender = true;
       }
       if (changes.scratchpad && changes.scratchpad.newValue !== scratchpad) {
@@ -643,7 +654,7 @@
         background: #f4f4f5;
       }
 
-      /* Card List */
+      /* Compact Credential Card (Email & Password Only) */
       .tn-card-list {
         display: flex;
         flex-direction: column;
@@ -653,10 +664,10 @@
         background: #121214;
         border: 1px solid #27272a;
         border-radius: 6px;
-        padding: 12px;
+        padding: 10px;
         display: flex;
         flex-direction: column;
-        gap: 8px;
+        gap: 6px;
         transition: border-color 0.15s;
       }
       .tn-theme-light .tn-card {
@@ -668,44 +679,6 @@
       }
       .tn-theme-light .tn-card:hover {
         border-color: #d4d4d8;
-      }
-      .tn-card-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-      }
-      .tn-card-title-group {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-      .tn-card-label {
-        font-size: 13px;
-        font-weight: 700;
-        color: #ffffff;
-      }
-      .tn-theme-light .tn-card-label {
-        color: #09090b;
-      }
-      .tn-card-role {
-        font-size: 9px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.4px;
-        padding: 2px 6px;
-        border-radius: 2px;
-        background: #27272a;
-        color: #d4d4d8;
-        border: 1px solid #3f3f46;
-      }
-      .tn-theme-light .tn-card-role {
-        background: #e4e4e7;
-        color: #27272a;
-        border-color: #d4d4d8;
-      }
-      .tn-card-actions {
-        display: flex;
-        gap: 2px;
       }
 
       /* Field Row */
@@ -761,20 +734,16 @@
         margin-top: 2px;
         gap: 8px;
       }
-      .tn-card-note {
-        font-size: 11px;
-        color: #71717a;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        flex: 1;
+      .tn-card-actions {
+        display: flex;
+        gap: 4px;
       }
       .tn-btn-autofill {
         background: #18181b;
         color: #f4f4f5;
         border: 1px solid #3f3f46;
         border-radius: 4px;
-        padding: 4px 8px;
+        padding: 4px 10px;
         font-size: 11px;
         font-weight: 600;
         cursor: pointer;
@@ -797,7 +766,7 @@
         border-color: #09090b;
       }
 
-      /* Inline Form */
+      /* Inline Form (Email & Password Only) */
       .tn-form-container {
         background: #121214;
         border: 1px solid #3f3f46;
@@ -1024,12 +993,7 @@
     const filteredAccounts = accounts.filter((acc) => {
       if (!searchQuery.trim()) return true;
       const q = searchQuery.toLowerCase();
-      return (
-        acc.label.toLowerCase().includes(q) ||
-        acc.email.toLowerCase().includes(q) ||
-        (acc.role && acc.role.toLowerCase().includes(q)) ||
-        (acc.note && acc.note.toLowerCase().includes(q))
-      );
+      return acc.email.toLowerCase().includes(q);
     });
 
     shadow.innerHTML = `
@@ -1114,49 +1078,31 @@
               type="text" 
               class="tn-search-input" 
               id="tn-search-input" 
-              placeholder="Search accounts or email..." 
+              placeholder="Search email..." 
               value="${escapeHtml(searchQuery)}"
             />
           </div>
           <button class="tn-btn-primary" id="tn-btn-toggle-add">
-            ${showAddForm ? "Cancel" : "Add"}
+            ${showAddForm ? "Cancel" : "+ Add"}
           </button>
         </div>
 
-        <!-- Inline Add/Edit Form -->
+        <!-- Inline Add/Edit Form (Email & Password Only) -->
         ${
           showAddForm
             ? `
           <div class="tn-form-container" id="tn-account-form">
             <div class="tn-form-title">${editingAccountId ? "Edit Credential" : "New Credential"}</div>
             <div class="tn-input-group">
-              <label class="tn-input-label">Label</label>
-              <input type="text" class="tn-text-input" id="tn-form-label" placeholder="Super Admin, Customer Test" value="${
-                editingAccountId ? escapeHtml(accounts.find((a) => a.id === editingAccountId)?.label || "") : ""
-              }" />
-            </div>
-            <div class="tn-input-group">
-              <label class="tn-input-label">Email / User</label>
-              <input type="text" class="tn-text-input" id="tn-form-email" placeholder="admin@tester.local" value="${
+              <label class="tn-input-label">Email / Username</label>
+              <input type="text" class="tn-text-input" id="tn-form-email" placeholder="e.g. test@example.com" value="${
                 editingAccountId ? escapeHtml(accounts.find((a) => a.id === editingAccountId)?.email || "") : ""
               }" />
             </div>
             <div class="tn-input-group">
               <label class="tn-input-label">Password</label>
-              <input type="text" class="tn-text-input" id="tn-form-password" placeholder="Pass1234!" value="${
+              <input type="text" class="tn-text-input" id="tn-form-password" placeholder="e.g. Password123!" value="${
                 editingAccountId ? escapeHtml(accounts.find((a) => a.id === editingAccountId)?.password || "") : ""
-              }" />
-            </div>
-            <div class="tn-input-group">
-              <label class="tn-input-label">Role Tag</label>
-              <input type="text" class="tn-text-input" id="tn-form-role" placeholder="Admin, Customer, QA" value="${
-                editingAccountId ? escapeHtml(accounts.find((a) => a.id === editingAccountId)?.role || "") : ""
-              }" />
-            </div>
-            <div class="tn-input-group">
-              <label class="tn-input-label">Notes</label>
-              <input type="text" class="tn-text-input" id="tn-form-note" placeholder="Bypassed 2FA" value="${
-                editingAccountId ? escapeHtml(accounts.find((a) => a.id === editingAccountId)?.note || "") : ""
               }" />
             </div>
             <div class="tn-form-actions">
@@ -1168,36 +1114,21 @@
             : ""
         }
 
-        <!-- Cards List -->
+        <!-- Cards List (Compact Email & Password) -->
         <div class="tn-card-list">
           ${
             filteredAccounts.length === 0
-              ? `<div style="text-align: center; color: #71717a; font-size: 12px; padding: 24px;">No credentials found.</div>`
+              ? `<div style="text-align: center; color: #71717a; font-size: 12px; padding: 24px;">No credentials found. Click '+ Add' to save one.</div>`
               : filteredAccounts
                   .map((acc) => {
                     const isVisible = !!showPasswords[acc.id];
                     const maskedPassword = isVisible ? escapeHtml(acc.password) : "••••••••••••";
                     return `
               <div class="tn-card" data-account-id="${acc.id}">
-                <div class="tn-card-header">
-                  <div class="tn-card-title-group">
-                    <span class="tn-card-label">${escapeHtml(acc.label)}</span>
-                    ${acc.role ? `<span class="tn-card-role">${escapeHtml(acc.role)}</span>` : ""}
-                  </div>
-                  <div class="tn-card-actions">
-                    <button class="tn-btn-ghost tn-btn-edit-account" data-id="${acc.id}" title="Edit">
-                      ${Icons.edit}
-                    </button>
-                    <button class="tn-btn-ghost tn-btn-delete-account" data-id="${acc.id}" title="Delete">
-                      ${Icons.trash}
-                    </button>
-                  </div>
-                </div>
-
                 <!-- Email Row -->
                 <div class="tn-field-row">
                   <div class="tn-field-info">
-                    <span class="tn-field-label">Email / User</span>
+                    <span class="tn-field-label">Email</span>
                     <span class="tn-field-value" title="${escapeHtml(acc.email)}">${escapeHtml(acc.email)}</span>
                   </div>
                   <div class="tn-field-buttons">
@@ -1223,14 +1154,19 @@
                   </div>
                 </div>
 
-                <!-- Footer -->
+                <!-- Footer Actions -->
                 <div class="tn-card-footer">
-                  <span class="tn-card-note" title="${escapeHtml(acc.note || "")}">
-                    ${acc.note ? `Note: ${escapeHtml(acc.note)}` : ""}
-                  </span>
                   <button class="tn-btn-autofill" data-id="${acc.id}" title="Autofill inputs on this webpage">
                     Autofill
                   </button>
+                  <div class="tn-card-actions">
+                    <button class="tn-btn-ghost tn-btn-edit-account" data-id="${acc.id}" title="Edit">
+                      ${Icons.edit}
+                    </button>
+                    <button class="tn-btn-ghost tn-btn-delete-account" data-id="${acc.id}" title="Delete">
+                      ${Icons.trash}
+                    </button>
+                  </div>
                 </div>
               </div>
             `;
@@ -1428,12 +1364,7 @@
           const filtered = accounts.filter((acc) => {
             if (!searchQuery.trim()) return true;
             const q = searchQuery.toLowerCase();
-            return (
-              acc.label.toLowerCase().includes(q) ||
-              acc.email.toLowerCase().includes(q) ||
-              (acc.role && acc.role.toLowerCase().includes(q)) ||
-              (acc.note && acc.note.toLowerCase().includes(q))
-            );
+            return acc.email.toLowerCase().includes(q);
           });
           const container = shadow.querySelector(".tn-body");
           if (container) {
@@ -1469,25 +1400,22 @@
       });
     }
 
-    // Save Form
+    // Save Form (Email & Password Only)
     const saveFormBtn = shadow.getElementById("tn-form-save");
     if (saveFormBtn) {
       saveFormBtn.addEventListener("click", async () => {
-        const label = shadow.getElementById("tn-form-label").value.trim();
         const email = shadow.getElementById("tn-form-email").value.trim();
         const password = shadow.getElementById("tn-form-password").value.trim();
-        const role = shadow.getElementById("tn-form-role").value.trim();
-        const note = shadow.getElementById("tn-form-note").value.trim();
 
-        if (!label || !email) {
-          showToast("Label and Email are required", "error");
+        if (!email) {
+          showToast("Email is required", "error");
           return;
         }
 
         if (editingAccountId) {
           const updated = accounts.map((a) => {
             if (a.id === editingAccountId) {
-              return { ...a, label, email, password, role, note };
+              return { id: a.id, email, password };
             }
             return a;
           });
@@ -1496,11 +1424,8 @@
         } else {
           const newAcc = {
             id: "acc_" + Date.now(),
-            label,
             email,
-            password,
-            role,
-            note
+            password
           };
           await saveAccounts([...accounts, newAcc]);
           showToast("Credential added", "success");
@@ -1676,7 +1601,12 @@
           try {
             const imported = JSON.parse(event.target.result);
             if (Array.isArray(imported.accounts)) {
-              await saveAccounts(imported.accounts);
+              const cleaned = imported.accounts.map((a) => ({
+                id: a.id || "acc_" + Math.random().toString(36).substring(2, 7),
+                email: a.email || a.label || "",
+                password: a.password || ""
+              }));
+              await saveAccounts(cleaned);
             }
             if (typeof imported.scratchpad === "string") {
               await saveScratchpad(imported.scratchpad);
@@ -1702,35 +1632,18 @@
           const DEFAULT_ACCOUNTS = [
             {
               id: "acc_1",
-              label: "Super Admin",
               email: "admin@tester.local",
-              password: "AdminSuperSecret2026!",
-              role: "Admin",
-              note: "Full platform permissions, bypassed 2FA"
+              password: "AdminPass2026!"
             },
             {
               id: "acc_2",
-              label: "Customer Standard",
-              email: "customer.qa@testmail.com",
-              password: "CustomerPass@1234",
-              role: "Customer",
-              note: "Verified customer account with dummy wallet"
+              email: "user@testmail.com",
+              password: "UserPass@1234"
             },
             {
               id: "acc_3",
-              label: "QA Vendor / Seller",
-              email: "vendor.merchant@staging.test",
-              password: "Vendor#SecurePass99",
-              role: "Merchant",
-              note: "Seller account with 10 dummy catalog items"
-            },
-            {
-              id: "acc_4",
-              label: "Invalid / Locked User",
-              email: "blocked.user@testmail.com",
-              password: "WrongPassword999!",
-              role: "Test Edge",
-              note: "Test invalid credentials or account lockout"
+              email: "qa@staging.test",
+              password: "QAPassword99!"
             }
           ];
           await saveAccounts(DEFAULT_ACCOUNTS);

@@ -1,4 +1,4 @@
-// Popup script - Clean Monochrome
+// Popup script - Clean Monochrome (Email & Password Only)
 document.addEventListener("DOMContentLoaded", async () => {
   const container = document.getElementById("accounts-container");
   const searchInput = document.getElementById("popup-search");
@@ -34,7 +34,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   function render(list) {
     if (list.length === 0) {
-      container.innerHTML = `<div style="text-align:center; color:#71717a; padding:20px;">No accounts found.</div>`;
+      container.innerHTML = `<div style="text-align:center; color:#71717a; padding:20px;">No credentials found.</div>`;
       return;
     }
 
@@ -42,10 +42,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       .map(
         (acc) => `
       <div class="acc-card">
-        <div class="acc-header">
-          <span class="acc-label">${escapeHtml(acc.label)}</span>
-          ${acc.role ? `<span class="acc-role">${escapeHtml(acc.role)}</span>` : ""}
-        </div>
         <div class="row">
           <span class="val" title="${escapeHtml(acc.email)}">${escapeHtml(acc.email)}</span>
           <button class="btn-copy btn-copy-email" data-val="${escapeHtml(acc.email)}">Copy</button>
@@ -79,10 +75,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   searchInput.addEventListener("input", (e) => {
     const q = e.target.value.toLowerCase();
     const filtered = accounts.filter(
-      (a) =>
-        a.label.toLowerCase().includes(q) ||
-        a.email.toLowerCase().includes(q) ||
-        (a.role && a.role.toLowerCase().includes(q))
+      (a) => a.email.toLowerCase().includes(q)
     );
     render(filtered);
   });

@@ -4,40 +4,23 @@
 const DEFAULT_ACCOUNTS = [
   {
     id: "acc_1",
-    label: "Super Admin",
     email: "admin@tester.local",
-    password: "AdminSuperSecret2026!",
-    role: "Admin",
-    note: "Full platform permissions, bypassed 2FA"
+    password: "AdminPass2026!"
   },
   {
     id: "acc_2",
-    label: "Customer Standard",
-    email: "customer.qa@testmail.com",
-    password: "CustomerPass@1234",
-    role: "Customer",
-    note: "Verified customer account with dummy wallet"
+    email: "user@testmail.com",
+    password: "UserPass@1234"
   },
   {
     id: "acc_3",
-    label: "QA Vendor / Seller",
-    email: "vendor.merchant@staging.test",
-    password: "Vendor#SecurePass99",
-    role: "Merchant",
-    note: "Seller account with 10 dummy catalog items"
-  },
-  {
-    id: "acc_4",
-    label: "Invalid / Locked User",
-    email: "blocked.user@testmail.com",
-    password: "WrongPassword999!",
-    role: "Test Edge",
-    note: "Test invalid credentials or account lockout"
+    email: "qa@staging.test",
+    password: "QAPassword99!"
   }
 ];
 
 const DEFAULT_NOTES = `=== WEB TESTER SCRATCHPAD ===
-• Test Staging: https://staging.testapp.local
+• Staging: https://staging.testapp.local
 • Mock OTP: 738291
 • Test Card: 4242 4242 4242 4242 (04/28, CVV: 123)
 • Dummy NIK: 3171010101900001
@@ -46,7 +29,7 @@ const DEFAULT_NOTES = `=== WEB TESTER SCRATCHPAD ===
 
 const DEFAULT_SETTINGS = {
   floatingIconEnabled: true,
-  theme: "dark", // "dark", "light", "cyber"
+  theme: "dark",
   keepOpenOnCopy: true,
   autofillNotification: true
 };
@@ -57,7 +40,16 @@ chrome.runtime.onInstalled.addListener(async (details) => {
   
   if (!data.accounts || !Array.isArray(data.accounts) || data.accounts.length === 0) {
     await chrome.storage.local.set({ accounts: DEFAULT_ACCOUNTS });
+  } else {
+    // If existing accounts have obsolete 'label' or 'role', strip them to keep it clean
+    const cleaned = data.accounts.map(a => ({
+      id: a.id,
+      email: a.email || a.label || "",
+      password: a.password || ""
+    }));
+    await chrome.storage.local.set({ accounts: cleaned });
   }
+
   if (typeof data.scratchpad !== "string") {
     await chrome.storage.local.set({ scratchpad: DEFAULT_NOTES });
   }
@@ -66,19 +58,16 @@ chrome.runtime.onInstalled.addListener(async (details) => {
   }
 });
 
-// Handle keyboard shortcut (e.g., Alt+N)
+// Handle keyboard shortcut (Alt+L)
 chrome.commands.onCommand.addListener(async (command) => {
   if (command === "toggle_drawer") {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (tab?.id) {
-      chrome.tabs.sendMessage(tab.id, { action: "TOGGLE_DRAWER" }).catch(() => {
-        // Tab might not have content script injected (e.g. chrome://)
-      });
+      chrome.tabs.sendMessage(tab.id, { action: "TOGGLE_DRAWER" }).catch(() => {});
     }
   }
 });
 
-// Broadcast changes or listen for queries
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === "PING") {
     sendResponse({ status: "PONG" });
