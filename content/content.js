@@ -766,6 +766,33 @@
         border-color: #09090b;
       }
 
+      .tn-btn-delete {
+        background: #18181b;
+        color: #a1a1aa;
+        border: 1px solid #27272a;
+        border-radius: 4px;
+        padding: 4px 8px;
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.15s, border-color 0.15s, color 0.15s;
+        white-space: nowrap;
+      }
+      .tn-theme-light .tn-btn-delete {
+        background: #f4f4f5;
+        border-color: #e4e4e7;
+        color: #71717a;
+      }
+      .tn-btn-delete:hover {
+        background: #27272a;
+        color: #ffffff;
+        border-color: #52525b;
+      }
+      .tn-theme-light .tn-btn-delete:hover {
+        background: #e4e4e7;
+        color: #09090b;
+      }
+
       /* Inline Form (Email & Password Only) */
       .tn-form-container {
         background: #121214;
@@ -1085,6 +1112,11 @@
           <button class="tn-btn-primary" id="tn-btn-toggle-add">
             ${showAddForm ? "Cancel" : "+ Add"}
           </button>
+          ${
+            accounts.length > 0
+              ? `<button class="tn-btn-delete" id="tn-btn-clear-all" title="Delete all credentials">Clear All</button>`
+              : ""
+          }
         </div>
 
         <!-- Inline Add/Edit Form (Email & Password Only) -->
@@ -1160,11 +1192,11 @@
                     Autofill
                   </button>
                   <div class="tn-card-actions">
-                    <button class="tn-btn-ghost tn-btn-edit-account" data-id="${acc.id}" title="Edit">
-                      ${Icons.edit}
+                    <button class="tn-btn-ghost tn-btn-edit-account" data-id="${acc.id}" title="Edit credential">
+                      Edit
                     </button>
-                    <button class="tn-btn-ghost tn-btn-delete-account" data-id="${acc.id}" title="Delete">
-                      ${Icons.trash}
+                    <button class="tn-btn-delete tn-btn-delete-account" data-id="${acc.id}" title="Delete credential">
+                      Delete
                     </button>
                   </div>
                 </div>
@@ -1479,13 +1511,20 @@
     shadow.querySelectorAll(".tn-btn-delete-account").forEach((btn) => {
       btn.addEventListener("click", async (e) => {
         const id = e.currentTarget.getAttribute("data-id");
-        if (confirm("Delete this credential?")) {
-          const updated = accounts.filter((a) => a.id !== id);
-          await saveAccounts(updated);
-          showToast("Credential deleted", "info");
-        }
+        const updated = accounts.filter((a) => a.id !== id);
+        await saveAccounts(updated);
+        showToast("Credential deleted", "info");
       });
     });
+
+    // Clear All Credentials
+    const clearAllBtn = shadow.getElementById("tn-btn-clear-all");
+    if (clearAllBtn) {
+      clearAllBtn.addEventListener("click", async () => {
+        await saveAccounts([]);
+        showToast("All credentials cleared", "info");
+      });
+    }
 
     // Autofill
     shadow.querySelectorAll(".tn-btn-autofill").forEach((btn) => {

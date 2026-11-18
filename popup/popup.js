@@ -44,7 +44,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       <div class="acc-card">
         <div class="row">
           <span class="val" title="${escapeHtml(acc.email)}">${escapeHtml(acc.email)}</span>
-          <button class="btn-copy btn-copy-email" data-val="${escapeHtml(acc.email)}">Copy</button>
+          <div style="display: flex; gap: 4px;">
+            <button class="btn-copy btn-copy-email" data-val="${escapeHtml(acc.email)}">Copy</button>
+            <button class="btn-copy btn-del-acc" data-id="${acc.id}" style="color: #a1a1aa;">Del</button>
+          </div>
         </div>
         <div class="row">
           <span class="val">••••••••</span>
@@ -61,6 +64,16 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     container.querySelectorAll(".btn-copy-pass").forEach((b) => {
       b.addEventListener("click", () => copyText(b.dataset.val, "Password"));
+    });
+
+    container.querySelectorAll(".btn-del-acc").forEach((b) => {
+      b.addEventListener("click", async () => {
+        const id = b.dataset.id;
+        accounts = accounts.filter((a) => a.id !== id);
+        await chrome.storage.local.set({ accounts });
+        showToast("Deleted");
+        render(accounts);
+      });
     });
   }
 
