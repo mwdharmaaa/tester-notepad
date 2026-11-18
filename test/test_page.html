@@ -12,25 +12,26 @@
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
     body {
-      background: #0b0f19;
-      color: #f1f5f9;
+      background: #09090b;
+      color: #f4f4f5;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
     }
     header {
-      background: #111827;
-      border-bottom: 1px solid #1f2937;
-      padding: 18px 32px;
+      background: #09090b;
+      border-bottom: 1px solid #27272a;
+      padding: 16px 32px;
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
     .badge {
-      background: #4f46e5;
-      color: #fff;
+      background: #18181b;
+      color: #ffffff;
+      border: 1px solid #3f3f46;
       padding: 4px 10px;
-      border-radius: 9999px;
+      border-radius: 4px;
       font-size: 11px;
       font-weight: 700;
       text-transform: uppercase;
@@ -40,11 +41,11 @@
       flex: 1;
       max-width: 1000px;
       margin: 0 auto;
-      padding: 40px 20px;
+      padding: 36px 20px;
       width: 100%;
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 32px;
+      gap: 28px;
     }
     @media (max-width: 768px) {
       main {
@@ -52,23 +53,23 @@
       }
     }
     .panel {
-      background: #111827;
-      border: 1px solid #1f2937;
-      border-radius: 12px;
+      background: #121214;
+      border: 1px solid #27272a;
+      border-radius: 6px;
       padding: 24px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
     }
     h2 {
-      font-size: 18px;
+      font-size: 16px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
       margin-bottom: 8px;
-      color: #818cf8;
-      display: flex;
-      align-items: center;
-      gap: 8px;
+      color: #ffffff;
     }
     p {
-      font-size: 13px;
-      color: #9ca3af;
+      font-size: 12px;
+      color: #71717a;
       margin-bottom: 20px;
       line-height: 1.5;
     }
@@ -77,93 +78,97 @@
     }
     label {
       display: block;
-      font-size: 12px;
-      font-weight: 600;
-      color: #d1d5db;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      color: #a1a1aa;
       margin-bottom: 6px;
     }
     input[type="text"],
     input[type="email"],
     input[type="password"] {
       width: 100%;
-      background: #1f2937;
-      border: 1px solid #374151;
-      border-radius: 8px;
-      padding: 10px 14px;
-      color: #fff;
+      background: #09090b;
+      border: 1px solid #27272a;
+      border-radius: 4px;
+      padding: 9px 12px;
+      color: #ffffff;
       font-size: 13px;
       outline: none;
-      transition: border-color 0.15s, box-shadow 0.15s;
+      transition: border-color 0.15s;
     }
     input:focus {
-      border-color: #6366f1;
-      box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+      border-color: #71717a;
     }
     .btn-submit {
       width: 100%;
-      background: #4f46e5;
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      padding: 12px;
-      font-weight: 600;
-      font-size: 14px;
+      background: #ffffff;
+      color: #09090b;
+      border: 1px solid #ffffff;
+      border-radius: 4px;
+      padding: 10px;
+      font-weight: 700;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
       cursor: pointer;
       transition: background 0.15s;
     }
     .btn-submit:hover {
-      background: #4338ca;
+      background: #e4e4e7;
     }
     .step-box {
-      background: #1a2234;
-      border-left: 4px solid #10b981;
-      padding: 12px 16px;
-      border-radius: 6px;
+      background: #09090b;
+      border: 1px solid #27272a;
+      padding: 12px 14px;
+      border-radius: 4px;
       margin-bottom: 16px;
       font-size: 12px;
+      color: #a1a1aa;
       line-height: 1.6;
     }
     .log-box {
-      background: #030712;
-      border: 1px solid #1f2937;
-      border-radius: 8px;
+      background: #09090b;
+      border: 1px solid #27272a;
+      border-radius: 4px;
       padding: 12px;
-      font-family: monospace;
+      font-family: ui-monospace, monospace;
       font-size: 11px;
-      color: #10b981;
+      color: #d4d4d8;
       max-height: 180px;
       overflow-y: auto;
     }
     .callout {
       margin-top: 24px;
       padding: 14px;
-      background: rgba(99, 102, 241, 0.1);
-      border: 1px dashed rgba(99, 102, 241, 0.4);
-      border-radius: 8px;
+      background: #09090b;
+      border: 1px solid #27272a;
+      border-radius: 4px;
       font-size: 12px;
-      color: #cbd5e1;
+      color: #a1a1aa;
     }
   </style>
 </head>
 <body>
   <header>
     <div>
-      <h1 style="font-size: 20px; font-weight: 700;">Web Tester Sandbox Portal</h1>
-      <span style="font-size: 12px; color: #9ca3af;">Tester Notepad Extension Testing Harness</span>
+      <h1 style="font-size: 16px; font-weight: 700; letter-spacing: 0.5px;">WEB TESTER VERIFICATION PORTAL</h1>
+      <span style="font-size: 11px; color: #71717a;">TEST HARNESS FOR TESTER NOTEPAD EXTENSION</span>
     </div>
-    <span class="badge">E2E Test Environment</span>
+    <span class="badge">E2E TEST</span>
   </header>
 
   <main>
-    <!-- Left Column: Instructions & Target Login Form -->
+    <!-- Left Column: Target Login Form -->
     <section class="panel">
-      <h2>🔐 Target Login Form</h2>
-      <p>Use this form to test one-click copy, paste, and the autofill feature from Tester Notepad.</p>
+      <h2>Target Login Form</h2>
+      <p>Test one-click copy, paste, and autofill actions from the Tester Notepad drawer.</p>
 
       <form id="login-form" onsubmit="event.preventDefault(); handleLoginSubmit();">
         <div class="form-group">
           <label for="login-email">Email or Username</label>
-          <input type="email" id="login-email" name="username" placeholder="e.g. admin@tester.local" autocomplete="username" required />
+          <input type="email" id="login-email" name="username" placeholder="admin@tester.local" autocomplete="username" required />
         </div>
 
         <div class="form-group">
@@ -171,29 +176,29 @@
           <input type="password" id="login-password" name="password" placeholder="••••••••••••" autocomplete="current-password" required />
         </div>
 
-        <button type="submit" class="btn-submit">Sign In (Test Verification)</button>
+        <button type="submit" class="btn-submit">Sign In (Verification)</button>
       </form>
 
       <div class="callout">
-        <b>💡 Cara Cek Flow:</b>
+        <b style="color: #ffffff;">Workflow:</b>
         <ol style="margin-left: 20px; margin-top: 6px; line-height: 1.6;">
-          <li>Lihat icon 📝 kecil di <b>pojok kanan bawah</b> layar.</li>
-          <li>Klik icon tersebut, notepad drawer akan meluncur keluar dari <b>kanan layar</b>.</li>
-          <li>Klik tombol <b>📋 Copy</b> pada email atau <b>🔑 Copy</b> pada password untuk menyalin sekejap.</li>
-          <li>Atau klik <b>🪄 Autofill</b> untuk langsung mengisi input form ini secara otomatis!</li>
-          <li>Shortcut keyboard: Tekan <b>Alt + L</b> (atau <b>Alt + N</b>) untuk toggle drawer kapan saja.</li>
+          <li>Click the monochrome icon at the bottom right corner of the screen.</li>
+          <li>The notepad drawer slides in from the right.</li>
+          <li>Click Copy on email or password to copy immediately.</li>
+          <li>Or click Autofill to populate form fields directly.</li>
+          <li>Keyboard shortcut: Press Alt + L to toggle the drawer.</li>
         </ol>
       </div>
     </section>
 
     <!-- Right Column: Verification Event Log -->
     <section class="panel">
-      <h2>📊 Live Form Event Tracker</h2>
-      <p>Tracks input changes and paste events as you test.</p>
+      <h2>Form Event Tracker</h2>
+      <p>Tracks input changes and paste events during test interaction.</p>
 
       <div class="step-box">
-        <strong>Status:</strong> Ready for tester interaction.<br/>
-        Floating trigger button is active in the bottom right corner.
+        <strong>Status:</strong> Ready.<br/>
+        Floating trigger icon is active in the bottom right corner.
       </div>
 
       <div class="log-box" id="event-log">
@@ -201,7 +206,7 @@
       </div>
 
       <div style="margin-top: 20px;">
-        <h3 style="font-size: 14px; margin-bottom: 8px; color: #d1d5db;">Additional Fields for Dummy Data Testing:</h3>
+        <h3 style="font-size: 12px; margin-bottom: 8px; color: #a1a1aa; text-transform: uppercase;">Additional Fields for Dummy Data Testing:</h3>
         <div class="form-group">
           <label>Phone Number (from Generators tab)</label>
           <input type="text" id="test-phone" placeholder="Paste generated phone here..." />

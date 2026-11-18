@@ -1,6 +1,7 @@
 /**
  * Tester Notepad - Content Script
- * Encapsulated via Shadow DOM for 100% style isolation on any webpage.
+ * Strictly Monochrome Minimalist UI (Black, White, Grays) - Zero Emojis
+ * Encapsulated via Shadow DOM for 100% style isolation.
  */
 
 (function () {
@@ -28,13 +29,25 @@
   let searchQuery = "";
   let editingAccountId = null;
   let showAddForm = false;
-  let showPasswords = {}; // map of accountId -> boolean
+  let showPasswords = {}; // accountId -> boolean
 
   // Create Root & Shadow
   const rootEl = document.createElement("div");
   rootEl.id = ROOT_ID;
   document.documentElement.appendChild(rootEl);
   const shadow = rootEl.attachShadow({ mode: "open" });
+
+  // Minimalist SVG Icons (Pure Line Geometry)
+  const Icons = {
+    doc: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>`,
+    close: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`,
+    pin: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"></line><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a1 1 0 0 0 0-2H8a1 1 0 0 0 0 2h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"></path></svg>`,
+    search: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>`,
+    edit: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>`,
+    trash: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`,
+    copy: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`,
+    check: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`
+  };
 
   // Load Initial Storage
   async function loadData() {
@@ -70,7 +83,7 @@
     render();
   }
 
-  // Listen to external storage updates
+  // Storage listener
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area === "local") {
       let shouldRerender = false;
@@ -93,7 +106,7 @@
     }
   });
 
-  // Listen for background messages (keyboard shortcuts)
+  // Background commands
   chrome.runtime.onMessage.addListener((message) => {
     if (message.action === "TOGGLE_DRAWER") {
       toggleDrawer();
@@ -101,7 +114,7 @@
   });
 
   // Clipboard copy helper
-  async function copyToClipboard(text, successMsg = "Copied!") {
+  async function copyToClipboard(text, successMsg = "Copied") {
     try {
       if (navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(text);
@@ -118,7 +131,7 @@
       showToast(successMsg, "success");
       return true;
     } catch (err) {
-      showToast("Failed to copy", "error");
+      showToast("Copy failed", "error");
       return false;
     }
   }
@@ -147,7 +160,6 @@
       function setInputValue(el, value) {
         el.focus();
         el.value = value;
-        // Dispatch synthetic events for React, Vue, Angular
         el.dispatchEvent(new Event("input", { bubbles: true, cancelable: true }));
         el.dispatchEvent(new Event("change", { bubbles: true, cancelable: true }));
         el.dispatchEvent(new Event("blur", { bubbles: true, cancelable: true }));
@@ -163,17 +175,17 @@
       }
 
       if (filledCount > 0) {
-        showToast(`Filled ${filledCount} fields (${account.label})!`, "success");
+        showToast(`Filled ${filledCount} field(s)`, "success");
       } else {
-        showToast("No standard login fields detected on this page.", "warning");
+        showToast("No login inputs found", "warning");
       }
     } catch (e) {
       console.error("[Tester Notepad] Autofill error:", e);
-      showToast("Autofill failed: " + e.message, "error");
+      showToast("Autofill failed", "error");
     }
   }
 
-  // Toast Notification System inside Shadow DOM
+  // Toast Notification System
   function showToast(message, type = "info") {
     const container = shadow.getElementById("tn-toast-container");
     if (!container) return;
@@ -181,20 +193,15 @@
     const toast = document.createElement("div");
     toast.className = `tn-toast tn-toast-${type}`;
 
-    let icon = "✓";
-    if (type === "error") icon = "✕";
-    if (type === "warning") icon = "!";
-    if (type === "info") icon = "ℹ";
-
-    toast.innerHTML = `<span class="tn-toast-icon">${icon}</span><span class="tn-toast-msg">${escapeHtml(
+    toast.innerHTML = `<span class="tn-toast-badge">[${type.toUpperCase()}]</span><span class="tn-toast-msg">${escapeHtml(
       message
     )}</span>`;
     container.appendChild(toast);
 
     setTimeout(() => {
       toast.classList.add("tn-toast-hide");
-      setTimeout(() => toast.remove(), 250);
-    }, 2200);
+      setTimeout(() => toast.remove(), 200);
+    }, 2000);
   }
 
   function escapeHtml(str) {
@@ -245,7 +252,6 @@
       return num;
     },
     randomNIK: () => {
-      // 16 digits format: 3171 + 01 + DDMMYY + 0001
       const day = String(Math.floor(Math.random() * 28) + 1).padStart(2, "0");
       const month = String(Math.floor(Math.random() * 12) + 1).padStart(2, "0");
       const year = String(Math.floor(Math.random() * 40) + 70).padStart(2, "0");
@@ -267,7 +273,7 @@
     }
   };
 
-  // Build Encapsulated CSS
+  // Strictly Monochrome Styles: Pure Black, Pure White, Grays
   function getStyles() {
     return `
       * {
@@ -277,54 +283,51 @@
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       }
 
-      /* Floating Button */
+      /* Floating Button (Pojok Kanan Bawah) */
       .tn-trigger-btn {
         pointer-events: auto;
         position: fixed;
         bottom: 24px;
         right: 24px;
-        width: 52px;
-        height: 52px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-        border: 2px solid rgba(255, 255, 255, 0.25);
-        box-shadow: 0 8px 24px -4px rgba(79, 70, 229, 0.55), 0 4px 12px 0 rgba(0, 0, 0, 0.2);
+        width: 48px;
+        height: 48px;
+        border-radius: 24px;
+        background: #09090b;
+        border: 1px solid #3f3f46;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7);
         display: flex;
         align-items: center;
         justify-content: center;
         cursor: pointer;
         z-index: 2147483647;
-        transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, opacity 0.2s;
+        color: #ffffff;
+        transition: background 0.15s, border-color 0.15s, transform 0.15s;
         user-select: none;
       }
       .tn-trigger-btn:hover {
-        transform: scale(1.08) translateY(-2px);
-        box-shadow: 0 12px 28px -2px rgba(79, 70, 229, 0.7), 0 6px 16px 0 rgba(0, 0, 0, 0.25);
+        background: #18181b;
+        border-color: #71717a;
+        transform: translateY(-2px);
       }
       .tn-trigger-btn:active {
         transform: scale(0.96);
       }
-      .tn-trigger-icon {
-        width: 24px;
-        height: 24px;
-        color: #ffffff;
-      }
       .tn-trigger-badge {
         position: absolute;
-        top: -3px;
-        right: -3px;
-        background: #10b981;
-        color: #ffffff;
+        top: -4px;
+        right: -4px;
+        background: #ffffff;
+        color: #09090b;
         font-size: 10px;
         font-weight: 700;
-        min-width: 18px;
-        height: 18px;
+        min-width: 17px;
+        height: 17px;
         border-radius: 9px;
         display: flex;
         align-items: center;
         justify-content: center;
         padding: 0 4px;
-        border: 2px solid #0f172a;
+        border: 1px solid #09090b;
       }
 
       /* Backdrop */
@@ -332,12 +335,11 @@
         pointer-events: auto;
         position: fixed;
         inset: 0;
-        background: rgba(15, 23, 42, 0.3);
-        backdrop-filter: blur(2px);
+        background: rgba(0, 0, 0, 0.6);
         z-index: 2147483646;
         opacity: 0;
         visibility: hidden;
-        transition: opacity 0.25s ease, visibility 0.25s;
+        transition: opacity 0.2s ease, visibility 0.2s;
       }
       .tn-backdrop.tn-open {
         opacity: 1;
@@ -350,27 +352,29 @@
         position: fixed;
         top: 0;
         right: 0;
-        width: 395px;
+        width: 390px;
         max-width: calc(100vw - 16px);
         height: 100vh;
-        background: #0f172a;
-        color: #f1f5f9;
-        box-shadow: -8px 0 32px rgba(0, 0, 0, 0.5), -1px 0 0 rgba(255, 255, 255, 0.1);
+        background: #09090b;
+        color: #f4f4f5;
+        border-left: 1px solid #27272a;
+        box-shadow: -8px 0 28px rgba(0, 0, 0, 0.8);
         z-index: 2147483647;
         display: flex;
         flex-direction: column;
         transform: translateX(100%);
-        transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+        transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
       }
       .tn-drawer.tn-open {
         transform: translateX(0);
       }
 
-      /* Light Theme Override */
+      /* Light Mode Monochrome Variant */
       .tn-theme-light .tn-drawer {
         background: #ffffff;
-        color: #1e293b;
-        box-shadow: -8px 0 32px rgba(0, 0, 0, 0.15), -1px 0 0 rgba(0, 0, 0, 0.08);
+        color: #09090b;
+        border-left: 1px solid #e4e4e7;
+        box-shadow: -8px 0 28px rgba(0, 0, 0, 0.15);
       }
 
       /* Header */
@@ -379,45 +383,48 @@
         align-items: center;
         justify-content: space-between;
         padding: 14px 18px;
-        background: #1e293b;
-        border-bottom: 1px solid #334155;
+        background: #09090b;
+        border-bottom: 1px solid #27272a;
       }
       .tn-theme-light .tn-header {
-        background: #f8fafc;
-        border-bottom: 1px solid #e2e8f0;
+        background: #ffffff;
+        border-bottom: 1px solid #e4e4e7;
       }
-      .tn-header-brand {
+      .tn-brand-group {
         display: flex;
         align-items: center;
         gap: 10px;
       }
       .tn-brand-icon {
-        width: 28px;
-        height: 28px;
-        border-radius: 6px;
-        background: linear-gradient(135deg, #4f46e5, #06b6d4);
+        width: 26px;
+        height: 26px;
+        border-radius: 4px;
+        background: #18181b;
+        border: 1px solid #3f3f46;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 14px;
-        color: #fff;
+        color: #ffffff;
+      }
+      .tn-brand-text {
+        display: flex;
+        flex-direction: column;
       }
       .tn-brand-title {
-        font-size: 15px;
+        font-size: 13px;
         font-weight: 700;
-        letter-spacing: -0.2px;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-      }
-      .tn-brand-tag {
-        font-size: 10px;
-        font-weight: 600;
+        letter-spacing: 0.5px;
         text-transform: uppercase;
-        background: rgba(99, 102, 241, 0.2);
-        color: #818cf8;
-        padding: 2px 6px;
-        border-radius: 4px;
+        color: #ffffff;
+      }
+      .tn-theme-light .tn-brand-title {
+        color: #09090b;
+      }
+      .tn-brand-sub {
+        font-size: 10px;
+        color: #71717a;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
       }
       .tn-header-actions {
         display: flex;
@@ -425,87 +432,97 @@
         gap: 6px;
       }
       .tn-icon-btn {
-        background: transparent;
-        border: none;
-        color: #94a3b8;
+        background: #18181b;
+        border: 1px solid #27272a;
+        color: #a1a1aa;
         cursor: pointer;
         width: 28px;
         height: 28px;
-        border-radius: 6px;
+        border-radius: 4px;
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: background 0.15s, color 0.15s;
+        transition: background 0.15s, color 0.15s, border-color 0.15s;
+      }
+      .tn-theme-light .tn-icon-btn {
+        background: #f4f4f5;
+        border: 1px solid #e4e4e7;
+        color: #52525b;
       }
       .tn-icon-btn:hover {
-        background: #334155;
+        background: #27272a;
         color: #ffffff;
+        border-color: #3f3f46;
       }
       .tn-theme-light .tn-icon-btn:hover {
-        background: #e2e8f0;
-        color: #0f172a;
+        background: #e4e4e7;
+        color: #09090b;
       }
       .tn-icon-btn.tn-active {
-        color: #818cf8;
-        background: rgba(99, 102, 241, 0.2);
+        background: #ffffff;
+        color: #09090b;
+        border-color: #ffffff;
       }
 
       /* Tabs */
       .tn-tabs {
         display: flex;
-        background: #172033;
-        border-bottom: 1px solid #334155;
-        padding: 0 8px;
+        background: #09090b;
+        border-bottom: 1px solid #27272a;
+        padding: 0 12px;
       }
       .tn-theme-light .tn-tabs {
-        background: #f1f5f9;
-        border-bottom: 1px solid #e2e8f0;
+        background: #ffffff;
+        border-bottom: 1px solid #e4e4e7;
       }
       .tn-tab {
         flex: 1;
         padding: 10px 4px;
-        font-size: 12px;
+        font-size: 11px;
         font-weight: 600;
-        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        color: #71717a;
         background: transparent;
         border: none;
         border-bottom: 2px solid transparent;
         cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 6px;
+        text-align: center;
         transition: color 0.15s, border-color 0.15s;
       }
       .tn-tab:hover {
-        color: #f8fafc;
+        color: #d4d4d8;
       }
       .tn-theme-light .tn-tab:hover {
-        color: #0f172a;
+        color: #27272a;
       }
       .tn-tab.tn-active {
-        color: #818cf8;
-        border-bottom-color: #818cf8;
+        color: #ffffff;
+        border-bottom-color: #ffffff;
+      }
+      .tn-theme-light .tn-tab.tn-active {
+        color: #09090b;
+        border-bottom-color: #09090b;
       }
 
-      /* Content Body */
+      /* Body */
       .tn-body {
         flex: 1;
         overflow-y: auto;
-        padding: 16px;
+        padding: 14px 16px;
         display: flex;
         flex-direction: column;
-        gap: 14px;
+        gap: 12px;
       }
       .tn-body::-webkit-scrollbar {
-        width: 6px;
+        width: 5px;
       }
       .tn-body::-webkit-scrollbar-thumb {
-        background: #334155;
-        border-radius: 3px;
+        background: #27272a;
+        border-radius: 2px;
       }
 
-      /* Search & Controls */
+      /* Toolbar */
       .tn-toolbar {
         display: flex;
         gap: 8px;
@@ -515,76 +532,142 @@
         flex: 1;
         position: relative;
       }
-      .tn-search-input {
-        width: 100%;
-        background: #1e293b;
-        border: 1px solid #334155;
-        border-radius: 8px;
-        color: #f8fafc;
-        font-size: 13px;
-        padding: 8px 12px 8px 32px;
-        outline: none;
-        transition: border-color 0.15s, box-shadow 0.15s;
-      }
-      .tn-theme-light .tn-search-input {
-        background: #f8fafc;
-        border-color: #cbd5e1;
-        color: #0f172a;
-      }
-      .tn-search-input:focus {
-        border-color: #6366f1;
-        box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25);
-      }
       .tn-search-icon {
         position: absolute;
         left: 10px;
         top: 50%;
         transform: translateY(-50%);
-        color: #64748b;
+        color: #71717a;
         pointer-events: none;
-      }
-      .tn-btn-add {
-        background: #4f46e5;
-        color: #ffffff;
-        border: none;
-        border-radius: 8px;
-        padding: 8px 12px;
-        font-size: 12px;
-        font-weight: 600;
-        cursor: pointer;
         display: flex;
         align-items: center;
-        gap: 4px;
-        white-space: nowrap;
-        transition: background 0.15s;
       }
-      .tn-btn-add:hover {
-        background: #4338ca;
+      .tn-search-input {
+        width: 100%;
+        background: #121214;
+        border: 1px solid #27272a;
+        border-radius: 4px;
+        color: #ffffff;
+        font-size: 12px;
+        padding: 7px 10px 7px 30px;
+        outline: none;
+        transition: border-color 0.15s;
+      }
+      .tn-theme-light .tn-search-input {
+        background: #ffffff;
+        border-color: #e4e4e7;
+        color: #09090b;
+      }
+      .tn-search-input:focus {
+        border-color: #71717a;
+      }
+      .tn-theme-light .tn-search-input:focus {
+        border-color: #09090b;
       }
 
-      /* Credential Cards */
+      /* Buttons */
+      .tn-btn-primary {
+        background: #ffffff;
+        color: #09090b;
+        border: 1px solid #ffffff;
+        border-radius: 4px;
+        padding: 6px 12px;
+        font-size: 11px;
+        font-weight: 700;
+        cursor: pointer;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        transition: background 0.15s, opacity 0.15s;
+        white-space: nowrap;
+      }
+      .tn-theme-light .tn-btn-primary {
+        background: #09090b;
+        color: #ffffff;
+        border-color: #09090b;
+      }
+      .tn-btn-primary:hover {
+        background: #e4e4e7;
+      }
+      .tn-theme-light .tn-btn-primary:hover {
+        background: #27272a;
+      }
+
+      .tn-btn-secondary {
+        background: #18181b;
+        color: #f4f4f5;
+        border: 1px solid #27272a;
+        border-radius: 4px;
+        padding: 4px 8px;
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.15s, border-color 0.15s, color 0.15s;
+        white-space: nowrap;
+      }
+      .tn-theme-light .tn-btn-secondary {
+        background: #f4f4f5;
+        border-color: #e4e4e7;
+        color: #09090b;
+      }
+      .tn-btn-secondary:hover {
+        background: #27272a;
+        border-color: #3f3f46;
+        color: #ffffff;
+      }
+      .tn-theme-light .tn-btn-secondary:hover {
+        background: #e4e4e7;
+        border-color: #d4d4d8;
+      }
+      .tn-btn-secondary.tn-copied {
+        background: #ffffff !important;
+        color: #09090b !important;
+        border-color: #ffffff !important;
+      }
+
+      .tn-btn-ghost {
+        background: transparent;
+        color: #71717a;
+        border: 1px solid transparent;
+        border-radius: 4px;
+        padding: 4px 6px;
+        font-size: 11px;
+        cursor: pointer;
+        transition: color 0.15s, background 0.15s;
+      }
+      .tn-btn-ghost:hover {
+        color: #ffffff;
+        background: #18181b;
+      }
+      .tn-theme-light .tn-btn-ghost:hover {
+        color: #09090b;
+        background: #f4f4f5;
+      }
+
+      /* Card List */
       .tn-card-list {
         display: flex;
         flex-direction: column;
-        gap: 12px;
+        gap: 10px;
       }
       .tn-card {
-        background: #1e293b;
-        border: 1px solid #334155;
-        border-radius: 10px;
+        background: #121214;
+        border: 1px solid #27272a;
+        border-radius: 6px;
         padding: 12px;
         display: flex;
         flex-direction: column;
-        gap: 10px;
-        transition: transform 0.15s ease, border-color 0.15s ease;
+        gap: 8px;
+        transition: border-color 0.15s;
       }
       .tn-theme-light .tn-card {
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
+        background: #fcfcfc;
+        border: 1px solid #e4e4e7;
       }
       .tn-card:hover {
-        border-color: #475569;
-        transform: translateY(-1px);
+        border-color: #3f3f46;
+      }
+      .tn-theme-light .tn-card:hover {
+        border-color: #d4d4d8;
       }
       .tn-card-header {
         display: flex;
@@ -597,31 +680,39 @@
         gap: 8px;
       }
       .tn-card-label {
-        font-size: 14px;
+        font-size: 13px;
         font-weight: 700;
-        color: #f8fafc;
+        color: #ffffff;
       }
       .tn-theme-light .tn-card-label {
-        color: #0f172a;
+        color: #09090b;
       }
       .tn-card-role {
-        font-size: 10px;
-        font-weight: 600;
+        font-size: 9px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
         padding: 2px 6px;
-        border-radius: 4px;
-        background: rgba(16, 185, 129, 0.2);
-        color: #34d399;
+        border-radius: 2px;
+        background: #27272a;
+        color: #d4d4d8;
+        border: 1px solid #3f3f46;
+      }
+      .tn-theme-light .tn-card-role {
+        background: #e4e4e7;
+        color: #27272a;
+        border-color: #d4d4d8;
       }
       .tn-card-actions {
         display: flex;
-        gap: 4px;
+        gap: 2px;
       }
 
       /* Field Row */
       .tn-field-row {
-        background: #0f172a;
-        border: 1px solid #334155;
-        border-radius: 6px;
+        background: #09090b;
+        border: 1px solid #27272a;
+        border-radius: 4px;
         padding: 6px 8px;
         display: flex;
         align-items: center;
@@ -630,7 +721,7 @@
       }
       .tn-theme-light .tn-field-row {
         background: #ffffff;
-        border: 1px solid #cbd5e1;
+        border: 1px solid #e4e4e7;
       }
       .tn-field-info {
         display: flex;
@@ -639,56 +730,30 @@
         flex: 1;
       }
       .tn-field-label {
-        font-size: 10px;
-        font-weight: 600;
-        color: #64748b;
+        font-size: 9px;
+        font-weight: 700;
+        color: #71717a;
         text-transform: uppercase;
         letter-spacing: 0.4px;
       }
       .tn-field-value {
         font-size: 12px;
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-        color: #e2e8f0;
+        color: #f4f4f5;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
       }
       .tn-theme-light .tn-field-value {
-        color: #1e293b;
+        color: #09090b;
       }
       .tn-field-buttons {
         display: flex;
         align-items: center;
         gap: 4px;
       }
-      .tn-copy-btn {
-        background: #334155;
-        color: #e2e8f0;
-        border: none;
-        border-radius: 4px;
-        padding: 4px 8px;
-        font-size: 11px;
-        font-weight: 600;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        transition: background 0.15s, color 0.15s;
-      }
-      .tn-theme-light .tn-copy-btn {
-        background: #e2e8f0;
-        color: #334155;
-      }
-      .tn-copy-btn:hover {
-        background: #4f46e5;
-        color: #ffffff;
-      }
-      .tn-copy-btn.tn-copied {
-        background: #10b981 !important;
-        color: #ffffff !important;
-      }
 
-      /* Card Footer & Autofill */
+      /* Card Footer */
       .tn-card-footer {
         display: flex;
         align-items: center;
@@ -698,107 +763,100 @@
       }
       .tn-card-note {
         font-size: 11px;
-        color: #94a3b8;
-        font-style: italic;
+        color: #71717a;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
         flex: 1;
       }
       .tn-btn-autofill {
-        background: rgba(99, 102, 241, 0.15);
-        color: #a5b4fc;
-        border: 1px solid rgba(99, 102, 241, 0.4);
-        border-radius: 6px;
-        padding: 4px 10px;
+        background: #18181b;
+        color: #f4f4f5;
+        border: 1px solid #3f3f46;
+        border-radius: 4px;
+        padding: 4px 8px;
         font-size: 11px;
         font-weight: 600;
         cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 5px;
-        transition: all 0.15s;
+        transition: background 0.15s, border-color 0.15s, color 0.15s;
         white-space: nowrap;
       }
+      .tn-theme-light .tn-btn-autofill {
+        background: #f4f4f5;
+        border-color: #d4d4d8;
+        color: #09090b;
+      }
       .tn-btn-autofill:hover {
-        background: #4f46e5;
+        background: #ffffff;
+        color: #09090b;
+        border-color: #ffffff;
+      }
+      .tn-theme-light .tn-btn-autofill:hover {
+        background: #09090b;
         color: #ffffff;
-        border-color: #4f46e5;
+        border-color: #09090b;
       }
 
-      /* Form Inline Add/Edit */
+      /* Inline Form */
       .tn-form-container {
-        background: #1e293b;
-        border: 1px solid #4f46e5;
-        border-radius: 10px;
-        padding: 14px;
+        background: #121214;
+        border: 1px solid #3f3f46;
+        border-radius: 6px;
+        padding: 12px;
         display: flex;
         flex-direction: column;
-        gap: 10px;
+        gap: 8px;
       }
       .tn-theme-light .tn-form-container {
-        background: #f8fafc;
-        border-color: #6366f1;
+        background: #fcfcfc;
+        border-color: #d4d4d8;
       }
       .tn-form-title {
-        font-size: 13px;
+        font-size: 11px;
         font-weight: 700;
-        color: #818cf8;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        color: #ffffff;
+      }
+      .tn-theme-light .tn-form-title {
+        color: #09090b;
       }
       .tn-input-group {
         display: flex;
         flex-direction: column;
-        gap: 4px;
+        gap: 3px;
       }
       .tn-input-label {
-        font-size: 11px;
-        color: #94a3b8;
+        font-size: 10px;
+        color: #71717a;
         font-weight: 600;
+        text-transform: uppercase;
       }
       .tn-text-input {
-        background: #0f172a;
-        border: 1px solid #334155;
-        border-radius: 6px;
-        color: #f8fafc;
+        background: #09090b;
+        border: 1px solid #27272a;
+        border-radius: 4px;
+        color: #ffffff;
         font-size: 12px;
-        padding: 7px 10px;
+        padding: 6px 8px;
         outline: none;
       }
       .tn-theme-light .tn-text-input {
         background: #ffffff;
-        border-color: #cbd5e1;
-        color: #0f172a;
+        border-color: #e4e4e7;
+        color: #09090b;
       }
       .tn-text-input:focus {
-        border-color: #6366f1;
+        border-color: #71717a;
       }
       .tn-form-actions {
         display: flex;
         justify-content: flex-end;
-        gap: 8px;
+        gap: 6px;
         margin-top: 4px;
       }
-      .tn-btn-cancel {
-        background: transparent;
-        color: #94a3b8;
-        border: 1px solid #334155;
-        border-radius: 6px;
-        padding: 6px 12px;
-        font-size: 12px;
-        cursor: pointer;
-      }
-      .tn-btn-save {
-        background: #4f46e5;
-        color: #ffffff;
-        border: none;
-        border-radius: 6px;
-        padding: 6px 14px;
-        font-size: 12px;
-        font-weight: 600;
-        cursor: pointer;
-      }
 
-      /* Scratchpad Tab */
+      /* Scratchpad */
       .tn-scratchpad-area {
         display: flex;
         flex-direction: column;
@@ -809,25 +867,25 @@
       .tn-scratchpad-input {
         width: 100%;
         flex: 1;
-        min-height: 380px;
-        background: #1e293b;
-        border: 1px solid #334155;
-        border-radius: 8px;
-        color: #f8fafc;
+        min-height: 400px;
+        background: #121214;
+        border: 1px solid #27272a;
+        border-radius: 6px;
+        color: #f4f4f5;
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
         font-size: 12px;
         line-height: 1.5;
-        padding: 12px;
+        padding: 10px;
         resize: none;
         outline: none;
       }
       .tn-theme-light .tn-scratchpad-input {
-        background: #f8fafc;
-        border-color: #cbd5e1;
-        color: #0f172a;
+        background: #fcfcfc;
+        border-color: #e4e4e7;
+        color: #09090b;
       }
       .tn-scratchpad-input:focus {
-        border-color: #6366f1;
+        border-color: #71717a;
       }
       .tn-scratchpad-toolbar {
         display: flex;
@@ -836,23 +894,23 @@
       }
       .tn-scratchpad-info {
         font-size: 11px;
-        color: #64748b;
+        color: #71717a;
       }
       .tn-scratchpad-actions {
         display: flex;
-        gap: 8px;
+        gap: 6px;
       }
 
-      /* Generators Tab */
+      /* Generators */
       .tn-gen-grid {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
       }
       .tn-gen-item {
-        background: #1e293b;
-        border: 1px solid #334155;
-        border-radius: 8px;
+        background: #121214;
+        border: 1px solid #27272a;
+        border-radius: 6px;
         padding: 10px 12px;
         display: flex;
         align-items: center;
@@ -860,8 +918,8 @@
         gap: 8px;
       }
       .tn-theme-light .tn-gen-item {
-        background: #f8fafc;
-        border-color: #e2e8f0;
+        background: #fcfcfc;
+        border-color: #e4e4e7;
       }
       .tn-gen-info {
         display: flex;
@@ -869,44 +927,42 @@
         gap: 2px;
       }
       .tn-gen-name {
-        font-size: 13px;
-        font-weight: 600;
-        color: #f8fafc;
-        display: flex;
-        align-items: center;
-        gap: 6px;
+        font-size: 12px;
+        font-weight: 700;
+        color: #ffffff;
       }
       .tn-theme-light .tn-gen-name {
-        color: #0f172a;
+        color: #09090b;
       }
       .tn-gen-desc {
-        font-size: 11px;
-        color: #64748b;
+        font-size: 10px;
+        color: #71717a;
+        font-family: ui-monospace, monospace;
       }
 
-      /* Settings Tab */
+      /* Settings */
       .tn-settings-list {
         display: flex;
         flex-direction: column;
-        gap: 14px;
+        gap: 12px;
       }
       .tn-settings-group {
-        background: #1e293b;
-        border: 1px solid #334155;
-        border-radius: 8px;
+        background: #121214;
+        border: 1px solid #27272a;
+        border-radius: 6px;
         padding: 12px;
         display: flex;
         flex-direction: column;
         gap: 10px;
       }
       .tn-theme-light .tn-settings-group {
-        background: #f8fafc;
-        border-color: #e2e8f0;
+        background: #fcfcfc;
+        border-color: #e4e4e7;
       }
       .tn-settings-title {
-        font-size: 12px;
+        font-size: 11px;
         font-weight: 700;
-        color: #818cf8;
+        color: #71717a;
         text-transform: uppercase;
         letter-spacing: 0.5px;
       }
@@ -916,68 +972,52 @@
         justify-content: space-between;
       }
       .tn-setting-label {
-        font-size: 13px;
-        color: #e2e8f0;
+        font-size: 12px;
+        color: #f4f4f5;
       }
       .tn-theme-light .tn-setting-label {
-        color: #1e293b;
+        color: #09090b;
       }
 
-      /* Toast Notification */
+      /* Toast */
       #tn-toast-container {
         position: fixed;
         bottom: 24px;
-        right: 410px;
+        right: 405px;
         display: flex;
         flex-direction: column;
-        gap: 8px;
+        gap: 6px;
         z-index: 2147483647;
         pointer-events: none;
       }
       .tn-toast {
-        background: #1e293b;
+        background: #09090b;
         color: #ffffff;
-        border-radius: 8px;
-        padding: 8px 14px;
-        font-size: 12px;
+        border: 1px solid #3f3f46;
+        border-radius: 4px;
+        padding: 6px 12px;
+        font-size: 11px;
         font-weight: 600;
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
         display: flex;
         align-items: center;
         gap: 8px;
-        border-left: 4px solid #6366f1;
-        animation: tnSlideIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        transition: opacity 0.25s, transform 0.25s;
+        transition: opacity 0.2s, transform 0.2s;
       }
-      .tn-toast.tn-toast-success {
-        border-left-color: #10b981;
-      }
-      .tn-toast.tn-toast-error {
-        border-left-color: #ef4444;
-      }
-      .tn-toast.tn-toast-warning {
-        border-left-color: #f59e0b;
+      .tn-toast-badge {
+        color: #a1a1aa;
+        font-family: ui-monospace, monospace;
+        font-size: 10px;
       }
       .tn-toast-hide {
         opacity: 0;
-        transform: translateY(10px);
-      }
-      @keyframes tnSlideIn {
-        from {
-          opacity: 0;
-          transform: translateY(12px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
+        transform: translateY(8px);
       }
     `;
   }
 
   // Render UI
   function render() {
-    // If floating icon is disabled in settings, hide it unless drawer is open
     const isIconVisible = settings.floatingIconEnabled;
     const themeClass = settings.theme === "light" ? "tn-theme-light" : "tn-theme-dark";
 
@@ -995,18 +1035,12 @@
     shadow.innerHTML = `
       <style>${getStyles()}</style>
       <div class="${themeClass}">
-        <!-- Floating Action Button (Icon kecil di kanan bawah) -->
+        <!-- Floating Trigger Icon (Pojok Kanan Bawah) -->
         ${
           isIconVisible
             ? `
-          <div class="tn-trigger-btn" id="tn-trigger" title="Tester Notepad (Click or Alt+L / Alt+N)">
-            <svg class="tn-trigger-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-              <polyline points="14 2 14 8 20 8"></polyline>
-              <line x1="16" y1="13" x2="8" y2="13"></line>
-              <line x1="16" y1="17" x2="8" y2="17"></line>
-              <polyline points="10 9 9 9 8 9"></polyline>
-            </svg>
+          <div class="tn-trigger-btn" id="tn-trigger" title="Tester Notepad (Alt+L)">
+            ${Icons.doc}
             <div class="tn-trigger-badge">${accounts.length}</div>
           </div>
         `
@@ -1016,48 +1050,46 @@
         <!-- Backdrop -->
         <div class="tn-backdrop ${isDrawerOpen && !isPinned ? "tn-open" : ""}" id="tn-backdrop"></div>
 
-        <!-- Slide-out Drawer Panel (Notepad di kanan layar) -->
+        <!-- Slide-out Drawer Panel (Kanan Layar) -->
         <div class="tn-drawer ${isDrawerOpen ? "tn-open" : ""}" id="tn-drawer">
-          <!-- Drawer Header -->
+          <!-- Header -->
           <div class="tn-header">
-            <div class="tn-header-brand">
-              <div class="tn-brand-icon">📝</div>
-              <div>
-                <div class="tn-brand-title">
-                  Tester Notepad
-                  <span class="tn-brand-tag">Web QA</span>
-                </div>
+            <div class="tn-brand-group">
+              <div class="tn-brand-icon">${Icons.doc}</div>
+              <div class="tn-brand-text">
+                <span class="tn-brand-title">Tester Notepad</span>
+                <span class="tn-brand-sub">QA Workspace</span>
               </div>
             </div>
             <div class="tn-header-actions">
               <button class="tn-icon-btn ${isPinned ? "tn-active" : ""}" id="tn-btn-pin" title="${
-      isPinned ? "Unpin Drawer" : "Pin Drawer (Stay Open)"
+      isPinned ? "Unpin" : "Pin"
     }">
-                📌
+                ${Icons.pin}
               </button>
-              <button class="tn-icon-btn" id="tn-btn-close" title="Close (Esc)">
-                ✕
+              <button class="tn-icon-btn" id="tn-btn-close" title="Close">
+                ${Icons.close}
               </button>
             </div>
           </div>
 
-          <!-- Navigation Tabs -->
+          <!-- Tabs -->
           <div class="tn-tabs">
             <button class="tn-tab ${activeTab === "credentials" ? "tn-active" : ""}" data-tab="credentials">
-              🔑 Credentials
+              Credentials
             </button>
             <button class="tn-tab ${activeTab === "scratchpad" ? "tn-active" : ""}" data-tab="scratchpad">
-              📝 Scratchpad
+              Scratchpad
             </button>
             <button class="tn-tab ${activeTab === "generators" ? "tn-active" : ""}" data-tab="generators">
-              ⚡ Generators
+              Generators
             </button>
             <button class="tn-tab ${activeTab === "settings" ? "tn-active" : ""}" data-tab="settings">
-              ⚙️ Settings
+              Settings
             </button>
           </div>
 
-          <!-- Content Body -->
+          <!-- Body -->
           <div class="tn-body">
             ${renderTabContent(filteredAccounts)}
           </div>
@@ -1074,62 +1106,62 @@
   function renderTabContent(filteredAccounts) {
     if (activeTab === "credentials") {
       return `
-        <!-- Toolbar & Search -->
+        <!-- Toolbar -->
         <div class="tn-toolbar">
           <div class="tn-search-box">
-            <span class="tn-search-icon">🔍</span>
+            <span class="tn-search-icon">${Icons.search}</span>
             <input 
               type="text" 
               class="tn-search-input" 
               id="tn-search-input" 
-              placeholder="Search accounts, email, role..." 
+              placeholder="Search accounts or email..." 
               value="${escapeHtml(searchQuery)}"
             />
           </div>
-          <button class="tn-btn-add" id="tn-btn-toggle-add">
-            ${showAddForm ? "✕ Close" : "+ New"}
+          <button class="tn-btn-primary" id="tn-btn-toggle-add">
+            ${showAddForm ? "Cancel" : "Add"}
           </button>
         </div>
 
-        <!-- Add / Edit Form -->
+        <!-- Inline Add/Edit Form -->
         ${
           showAddForm
             ? `
           <div class="tn-form-container" id="tn-account-form">
-            <div class="tn-form-title">${editingAccountId ? "Edit Account" : "Add New Test Account"}</div>
+            <div class="tn-form-title">${editingAccountId ? "Edit Credential" : "New Credential"}</div>
             <div class="tn-input-group">
-              <label class="tn-input-label">Account Label</label>
-              <input type="text" class="tn-text-input" id="tn-form-label" placeholder="e.g. Superadmin, Buyer Test" value="${
+              <label class="tn-input-label">Label</label>
+              <input type="text" class="tn-text-input" id="tn-form-label" placeholder="Super Admin, Customer Test" value="${
                 editingAccountId ? escapeHtml(accounts.find((a) => a.id === editingAccountId)?.label || "") : ""
               }" />
             </div>
             <div class="tn-input-group">
-              <label class="tn-input-label">Email or Username</label>
-              <input type="text" class="tn-text-input" id="tn-form-email" placeholder="e.g. admin@tester.local" value="${
+              <label class="tn-input-label">Email / User</label>
+              <input type="text" class="tn-text-input" id="tn-form-email" placeholder="admin@tester.local" value="${
                 editingAccountId ? escapeHtml(accounts.find((a) => a.id === editingAccountId)?.email || "") : ""
               }" />
             </div>
             <div class="tn-input-group">
               <label class="tn-input-label">Password</label>
-              <input type="text" class="tn-text-input" id="tn-form-password" placeholder="e.g. Secret123!" value="${
+              <input type="text" class="tn-text-input" id="tn-form-password" placeholder="Pass1234!" value="${
                 editingAccountId ? escapeHtml(accounts.find((a) => a.id === editingAccountId)?.password || "") : ""
               }" />
             </div>
             <div class="tn-input-group">
-              <label class="tn-input-label">Role / Tag</label>
-              <input type="text" class="tn-text-input" id="tn-form-role" placeholder="e.g. Admin, Customer, QA" value="${
+              <label class="tn-input-label">Role Tag</label>
+              <input type="text" class="tn-text-input" id="tn-form-role" placeholder="Admin, Customer, QA" value="${
                 editingAccountId ? escapeHtml(accounts.find((a) => a.id === editingAccountId)?.role || "") : ""
               }" />
             </div>
             <div class="tn-input-group">
-              <label class="tn-input-label">Note (Optional)</label>
-              <input type="text" class="tn-text-input" id="tn-form-note" placeholder="e.g. Bypassed 2FA, Wallet balance $500" value="${
+              <label class="tn-input-label">Notes</label>
+              <input type="text" class="tn-text-input" id="tn-form-note" placeholder="Bypassed 2FA" value="${
                 editingAccountId ? escapeHtml(accounts.find((a) => a.id === editingAccountId)?.note || "") : ""
               }" />
             </div>
             <div class="tn-form-actions">
-              <button class="tn-btn-cancel" id="tn-form-cancel">Cancel</button>
-              <button class="tn-btn-save" id="tn-form-save">Save Account</button>
+              <button class="tn-btn-ghost" id="tn-form-cancel">Cancel</button>
+              <button class="tn-btn-primary" id="tn-form-save">Save</button>
             </div>
           </div>
         `
@@ -1140,7 +1172,7 @@
         <div class="tn-card-list">
           ${
             filteredAccounts.length === 0
-              ? `<div style="text-align: center; color: #64748b; font-size: 13px; padding: 24px;">No test credentials found. Click '+ New' to add one.</div>`
+              ? `<div style="text-align: center; color: #71717a; font-size: 12px; padding: 24px;">No credentials found.</div>`
               : filteredAccounts
                   .map((acc) => {
                     const isVisible = !!showPasswords[acc.id];
@@ -1153,8 +1185,12 @@
                     ${acc.role ? `<span class="tn-card-role">${escapeHtml(acc.role)}</span>` : ""}
                   </div>
                   <div class="tn-card-actions">
-                    <button class="tn-icon-btn tn-btn-edit-account" data-id="${acc.id}" title="Edit Account">✏️</button>
-                    <button class="tn-icon-btn tn-btn-delete-account" data-id="${acc.id}" title="Delete Account">🗑️</button>
+                    <button class="tn-btn-ghost tn-btn-edit-account" data-id="${acc.id}" title="Edit">
+                      ${Icons.edit}
+                    </button>
+                    <button class="tn-btn-ghost tn-btn-delete-account" data-id="${acc.id}" title="Delete">
+                      ${Icons.trash}
+                    </button>
                   </div>
                 </div>
 
@@ -1165,8 +1201,8 @@
                     <span class="tn-field-value" title="${escapeHtml(acc.email)}">${escapeHtml(acc.email)}</span>
                   </div>
                   <div class="tn-field-buttons">
-                    <button class="tn-copy-btn tn-copy-email-btn" data-text="${escapeHtml(acc.email)}">
-                      📋 Copy
+                    <button class="tn-btn-secondary tn-copy-email-btn" data-text="${escapeHtml(acc.email)}">
+                      Copy
                     </button>
                   </div>
                 </div>
@@ -1178,24 +1214,22 @@
                     <span class="tn-field-value">${maskedPassword}</span>
                   </div>
                   <div class="tn-field-buttons">
-                    <button class="tn-icon-btn tn-toggle-pass-btn" data-id="${acc.id}" title="${
-                      isVisible ? "Hide Password" : "Show Password"
-                    }">
-                      ${isVisible ? "🙈" : "👁️"}
+                    <button class="tn-btn-ghost tn-toggle-pass-btn" data-id="${acc.id}">
+                      ${isVisible ? "Hide" : "Show"}
                     </button>
-                    <button class="tn-copy-btn tn-copy-pass-btn" data-text="${escapeHtml(acc.password)}">
-                      🔑 Copy
+                    <button class="tn-btn-secondary tn-copy-pass-btn" data-text="${escapeHtml(acc.password)}">
+                      Copy
                     </button>
                   </div>
                 </div>
 
-                <!-- Footer & Autofill Action -->
+                <!-- Footer -->
                 <div class="tn-card-footer">
-                  <span class="tn-card-note" title="${escapeHtml(acc.note || "")}">${
-                      acc.note ? `💡 ${escapeHtml(acc.note)}` : ""
-                    }</span>
+                  <span class="tn-card-note" title="${escapeHtml(acc.note || "")}">
+                    ${acc.note ? `Note: ${escapeHtml(acc.note)}` : ""}
+                  </span>
                   <button class="tn-btn-autofill" data-id="${acc.id}" title="Autofill inputs on this webpage">
-                    🪄 Autofill
+                    Autofill
                   </button>
                 </div>
               </div>
@@ -1213,16 +1247,16 @@
       return `
         <div class="tn-scratchpad-area">
           <div class="tn-scratchpad-toolbar">
-            <span class="tn-scratchpad-info">${lineCount} lines • ${charCount} chars • Auto-saved</span>
+            <span class="tn-scratchpad-info">${lineCount} lines • ${charCount} chars</span>
             <div class="tn-scratchpad-actions">
-              <button class="tn-copy-btn" id="tn-btn-copy-notes">📋 Copy All</button>
-              <button class="tn-btn-cancel" id="tn-btn-clear-notes" style="padding: 4px 8px; font-size: 11px;">🧹 Clear</button>
+              <button class="tn-btn-secondary" id="tn-btn-copy-notes">Copy All</button>
+              <button class="tn-btn-ghost" id="tn-btn-clear-notes">Clear</button>
             </div>
           </div>
           <textarea 
             class="tn-scratchpad-input" 
             id="tn-scratchpad-input" 
-            placeholder="Write temporary test data, tokens, OTPs, URLs, or bug repro notes here..."
+            placeholder="Store temporary test notes, tokens, OTPs, or test scenarios..."
           >${escapeHtml(scratchpad)}</textarea>
         </div>
       `;
@@ -1233,58 +1267,58 @@
         <div class="tn-gen-grid">
           <div class="tn-gen-item">
             <div class="tn-gen-info">
-              <span class="tn-gen-name">📧 Random Test Email</span>
+              <span class="tn-gen-name">Random Test Email</span>
               <span class="tn-gen-desc">tester.timestamp@testmail.local</span>
             </div>
-            <button class="tn-copy-btn tn-gen-btn" data-gen="randomEmail">Copy</button>
+            <button class="tn-btn-secondary tn-gen-btn" data-gen="randomEmail">Copy</button>
           </div>
 
           <div class="tn-gen-item">
             <div class="tn-gen-info">
-              <span class="tn-gen-name">🔐 Strong Password</span>
-              <span class="tn-gen-desc">12 chars mixed with symbol & digits</span>
+              <span class="tn-gen-name">Strong Password</span>
+              <span class="tn-gen-desc">12 characters with digits & symbols</span>
             </div>
-            <button class="tn-copy-btn tn-gen-btn" data-gen="randomPassword">Copy</button>
+            <button class="tn-btn-secondary tn-gen-btn" data-gen="randomPassword">Copy</button>
           </div>
 
           <div class="tn-gen-item">
             <div class="tn-gen-info">
-              <span class="tn-gen-name">📱 Indonesian Mobile Phone</span>
-              <span class="tn-gen-desc">0812xxxxxxxx format</span>
+              <span class="tn-gen-name">Indonesian Mobile Phone</span>
+              <span class="tn-gen-desc">0812xxxxxxxx</span>
             </div>
-            <button class="tn-copy-btn tn-gen-btn" data-gen="randomPhone">Copy</button>
+            <button class="tn-btn-secondary tn-gen-btn" data-gen="randomPhone">Copy</button>
           </div>
 
           <div class="tn-gen-item">
             <div class="tn-gen-info">
-              <span class="tn-gen-name">🆔 Dummy 16-Digit NIK / KTP</span>
-              <span class="tn-gen-desc">Valid format standard numeric</span>
+              <span class="tn-gen-name">NIK / KTP 16-Digit</span>
+              <span class="tn-gen-desc">Numeric compliant standard</span>
             </div>
-            <button class="tn-copy-btn tn-gen-btn" data-gen="randomNIK">Copy</button>
+            <button class="tn-btn-secondary tn-gen-btn" data-gen="randomNIK">Copy</button>
           </div>
 
           <div class="tn-gen-item">
             <div class="tn-gen-info">
-              <span class="tn-gen-name">💳 Test Visa Credit Card</span>
+              <span class="tn-gen-name">Test Visa Credit Card</span>
               <span class="tn-gen-desc">4242 4242 4242 4242</span>
             </div>
-            <button class="tn-copy-btn tn-gen-btn" data-gen="randomCard">Copy</button>
+            <button class="tn-btn-secondary tn-gen-btn" data-gen="randomCard">Copy</button>
           </div>
 
           <div class="tn-gen-item">
             <div class="tn-gen-info">
-              <span class="tn-gen-name">🔢 UUID v4</span>
-              <span class="tn-gen-desc">Standard 36-char unique identifier</span>
+              <span class="tn-gen-name">UUID v4</span>
+              <span class="tn-gen-desc">Standard 36-char string</span>
             </div>
-            <button class="tn-copy-btn tn-gen-btn" data-gen="randomUUID">Copy</button>
+            <button class="tn-btn-secondary tn-gen-btn" data-gen="randomUUID">Copy</button>
           </div>
 
           <div class="tn-gen-item">
             <div class="tn-gen-info">
-              <span class="tn-gen-name">📄 Lorem Ipsum Paragraph</span>
+              <span class="tn-gen-name">Lorem Ipsum Text</span>
               <span class="tn-gen-desc">Standard dummy body text</span>
             </div>
-            <button class="tn-copy-btn tn-gen-btn" data-gen="loremShort">Copy</button>
+            <button class="tn-btn-secondary tn-gen-btn" data-gen="loremShort">Copy</button>
           </div>
         </div>
       `;
@@ -1294,39 +1328,39 @@
       return `
         <div class="tn-settings-list">
           <div class="tn-settings-group">
-            <div class="tn-settings-title">Display & Appearance</div>
+            <div class="tn-settings-title">Display</div>
             <div class="tn-setting-row">
               <span class="tn-setting-label">Show Floating Icon</span>
               <input type="checkbox" id="tn-set-icon-toggle" ${settings.floatingIconEnabled ? "checked" : ""} />
             </div>
             <div class="tn-setting-row">
-              <span class="tn-setting-label">Theme</span>
-              <select id="tn-set-theme" class="tn-text-input" style="padding: 4px 8px;">
-                <option value="dark" ${settings.theme === "dark" ? "selected" : ""}>Dark Theme</option>
-                <option value="light" ${settings.theme === "light" ? "selected" : ""}>Light Theme</option>
+              <span class="tn-setting-label">Theme Mode</span>
+              <select id="tn-set-theme" class="tn-text-input">
+                <option value="dark" ${settings.theme === "dark" ? "selected" : ""}>Dark Monochrome</option>
+                <option value="light" ${settings.theme === "light" ? "selected" : ""}>Light Monochrome</option>
               </select>
             </div>
           </div>
 
           <div class="tn-settings-group">
-            <div class="tn-settings-title">Data Backup & Restore</div>
-            <button class="tn-copy-btn" id="tn-btn-export" style="justify-content: center; padding: 8px;">
-              💾 Export All Data (JSON)
+            <div class="tn-settings-title">Backup & Restore</div>
+            <button class="tn-btn-secondary" id="tn-btn-export" style="width: 100%; text-align: center;">
+              Export JSON Backup
             </button>
-            <label class="tn-copy-btn" style="justify-content: center; padding: 8px; cursor: pointer;">
-              📂 Import Data (JSON)
+            <label class="tn-btn-secondary" style="width: 100%; text-align: center; display: block; cursor: pointer;">
+              Import JSON Backup
               <input type="file" id="tn-input-import" accept=".json" style="display: none;" />
             </label>
-            <button class="tn-btn-cancel" id="tn-btn-reset-data" style="margin-top: 4px; padding: 6px;">
-              ⚠️ Reset to Default Demo Accounts
+            <button class="tn-btn-ghost" id="tn-btn-reset-data" style="margin-top: 4px; text-align: center;">
+              Reset to Demo Defaults
             </button>
           </div>
 
           <div class="tn-settings-group">
-            <div class="tn-settings-title">Keyboard Shortcuts</div>
-            <div style="font-size: 12px; color: #94a3b8; line-height: 1.6;">
-              • <b>Alt + L</b> : Toggle Tester Notepad Drawer (atau <b>Alt + N</b>)<br/>
-              • <b>Esc</b> : Close Drawer
+            <div class="tn-settings-title">Shortcuts</div>
+            <div style="font-size: 11px; color: #71717a; line-height: 1.6; font-family: ui-monospace, monospace;">
+              Alt + L : Toggle Drawer<br/>
+              Esc     : Close Drawer
             </div>
           </div>
         </div>
@@ -1369,7 +1403,7 @@
     if (pinBtn) {
       pinBtn.addEventListener("click", () => {
         isPinned = !isPinned;
-        showToast(isPinned ? "Drawer pinned (stays open)" : "Drawer unpinned", "info");
+        showToast(isPinned ? "Drawer pinned" : "Drawer unpinned", "info");
         render();
       });
     }
@@ -1401,12 +1435,10 @@
               (acc.note && acc.note.toLowerCase().includes(q))
             );
           });
-          // re-render only the cards list
           const container = shadow.querySelector(".tn-body");
           if (container) {
             container.innerHTML = renderTabContent(filtered);
             bindEvents();
-            // restore focus
             const newSearch = shadow.getElementById("tn-search-input");
             if (newSearch) {
               newSearch.focus();
@@ -1448,7 +1480,7 @@
         const note = shadow.getElementById("tn-form-note").value.trim();
 
         if (!label || !email) {
-          showToast("Label and Email are required!", "error");
+          showToast("Label and Email are required", "error");
           return;
         }
 
@@ -1460,7 +1492,7 @@
             return a;
           });
           await saveAccounts(updated);
-          showToast("Account updated!", "success");
+          showToast("Credential updated", "success");
         } else {
           const newAcc = {
             id: "acc_" + Date.now(),
@@ -1471,7 +1503,7 @@
             note
           };
           await saveAccounts([...accounts, newAcc]);
-          showToast("Account added!", "success");
+          showToast("Credential added", "success");
         }
 
         showAddForm = false;
@@ -1484,9 +1516,9 @@
     shadow.querySelectorAll(".tn-copy-email-btn").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         const text = e.currentTarget.getAttribute("data-text");
-        copyToClipboard(text, "Email copied to clipboard!");
+        copyToClipboard(text, "Email copied");
         e.currentTarget.classList.add("tn-copied");
-        setTimeout(() => e.currentTarget.classList.remove("tn-copied"), 1000);
+        setTimeout(() => e.currentTarget.classList.remove("tn-copied"), 600);
       });
     });
 
@@ -1494,9 +1526,9 @@
     shadow.querySelectorAll(".tn-copy-pass-btn").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         const text = e.currentTarget.getAttribute("data-text");
-        copyToClipboard(text, "Password copied to clipboard!");
+        copyToClipboard(text, "Password copied");
         e.currentTarget.classList.add("tn-copied");
-        setTimeout(() => e.currentTarget.classList.remove("tn-copied"), 1000);
+        setTimeout(() => e.currentTarget.classList.remove("tn-copied"), 600);
       });
     });
 
@@ -1525,7 +1557,7 @@
         if (confirm("Delete this credential?")) {
           const updated = accounts.filter((a) => a.id !== id);
           await saveAccounts(updated);
-          showToast("Credential deleted.", "info");
+          showToast("Credential deleted", "info");
         }
       });
     });
@@ -1550,7 +1582,7 @@
         const charCount = e.target.value.length;
         const info = shadow.querySelector(".tn-scratchpad-info");
         if (info) {
-          info.textContent = `${lineCount} lines • ${charCount} chars • Auto-saved`;
+          info.textContent = `${lineCount} lines • ${charCount} chars`;
         }
       });
     }
@@ -1559,7 +1591,7 @@
     const copyNotesBtn = shadow.getElementById("tn-btn-copy-notes");
     if (copyNotesBtn) {
       copyNotesBtn.addEventListener("click", () => {
-        copyToClipboard(scratchpad, "All scratchpad notes copied!");
+        copyToClipboard(scratchpad, "Scratchpad copied");
       });
     }
 
@@ -1570,7 +1602,7 @@
         if (confirm("Clear all scratchpad text?")) {
           await saveScratchpad("");
           render();
-          showToast("Scratchpad cleared.", "info");
+          showToast("Scratchpad cleared", "info");
         }
       });
     }
@@ -1581,9 +1613,9 @@
         const genType = e.currentTarget.getAttribute("data-gen");
         if (DummyGenerators[genType]) {
           const val = DummyGenerators[genType]();
-          copyToClipboard(val, `Generated & copied: ${val}`);
+          copyToClipboard(val, `Copied: ${val}`);
           e.currentTarget.classList.add("tn-copied");
-          setTimeout(() => e.currentTarget.classList.remove("tn-copied"), 1000);
+          setTimeout(() => e.currentTarget.classList.remove("tn-copied"), 600);
         }
       });
     });
@@ -1596,7 +1628,7 @@
         showToast(
           e.target.checked
             ? "Floating icon enabled"
-            : "Floating icon hidden (use Alt+L to open)",
+            : "Floating icon hidden (Alt+L to toggle)",
           "info"
         );
       });
@@ -1629,7 +1661,7 @@
         a.download = `tester-notepad-backup-${new Date().toISOString().slice(0, 10)}.json`;
         a.click();
         URL.revokeObjectURL(url);
-        showToast("Backup exported successfully!", "success");
+        showToast("Backup exported", "success");
       });
     }
 
@@ -1652,10 +1684,10 @@
             if (imported.settings) {
               await saveSettings(imported.settings);
             }
-            showToast("Backup imported successfully!", "success");
+            showToast("Backup imported", "success");
             render();
           } catch (err) {
-            showToast("Failed to parse JSON backup file.", "error");
+            showToast("Invalid JSON file", "error");
           }
         };
         reader.readAsText(file);
@@ -1666,7 +1698,7 @@
     const resetBtn = shadow.getElementById("tn-btn-reset-data");
     if (resetBtn) {
       resetBtn.addEventListener("click", async () => {
-        if (confirm("Reset accounts to initial demo credentials?")) {
+        if (confirm("Reset to default demo accounts?")) {
           const DEFAULT_ACCOUNTS = [
             {
               id: "acc_1",
@@ -1702,7 +1734,7 @@
             }
           ];
           await saveAccounts(DEFAULT_ACCOUNTS);
-          showToast("Reset to defaults complete.", "info");
+          showToast("Reset completed", "info");
           render();
         }
       });
@@ -1711,12 +1743,10 @@
 
   // Global Keyboard Shortcuts
   window.addEventListener("keydown", (e) => {
-    // Alt + L or Alt + N to toggle
     if (e.altKey && (e.key === "l" || e.key === "L" || e.key === "n" || e.key === "N")) {
       e.preventDefault();
       toggleDrawer();
     }
-    // Escape to close if open and not pinned
     if (e.key === "Escape" && isDrawerOpen && !isPinned) {
       isDrawerOpen = false;
       render();

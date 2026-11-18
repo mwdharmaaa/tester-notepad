@@ -1,4 +1,4 @@
-// Popup script
+// Popup script - Clean Monochrome
 document.addEventListener("DOMContentLoaded", async () => {
   const container = document.getElementById("accounts-container");
   const searchInput = document.getElementById("popup-search");
@@ -20,21 +20,21 @@ document.addEventListener("DOMContentLoaded", async () => {
   function showToast(msg) {
     toast.textContent = msg;
     toast.classList.add("show");
-    setTimeout(() => toast.classList.remove("show"), 1500);
+    setTimeout(() => toast.classList.remove("show"), 1400);
   }
 
   async function copyText(text, label) {
     try {
       await navigator.clipboard.writeText(text);
-      showToast(`${label} copied!`);
+      showToast(`${label} copied`);
     } catch (e) {
-      showToast("Failed to copy");
+      showToast("Copy failed");
     }
   }
 
   function render(list) {
     if (list.length === 0) {
-      container.innerHTML = `<div style="text-align:center; color:#64748b; padding:20px;">No accounts found.</div>`;
+      container.innerHTML = `<div style="text-align:center; color:#71717a; padding:20px;">No accounts found.</div>`;
       return;
     }
 
@@ -48,11 +48,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         </div>
         <div class="row">
           <span class="val" title="${escapeHtml(acc.email)}">${escapeHtml(acc.email)}</span>
-          <button class="btn-copy btn-copy-email" data-val="${escapeHtml(acc.email)}">Copy Email</button>
+          <button class="btn-copy btn-copy-email" data-val="${escapeHtml(acc.email)}">Copy</button>
         </div>
         <div class="row">
           <span class="val">••••••••</span>
-          <button class="btn-copy btn-copy-pass" data-val="${escapeHtml(acc.password)}">Copy Pass</button>
+          <button class="btn-copy btn-copy-pass" data-val="${escapeHtml(acc.password)}">Copy</button>
         </div>
       </div>
     `
