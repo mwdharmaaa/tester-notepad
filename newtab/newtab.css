@@ -1,0 +1,263 @@
+/* Google Chrome Authentic New Tab Page Styling */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+body {
+  background-color: #202124;
+  color: #e8eaed;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  user-select: none;
+  overflow-x: hidden;
+}
+
+/* Top Nav */
+.top-nav {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+}
+
+.top-nav-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.nav-link {
+  color: #e8eaed;
+  text-decoration: none;
+  font-size: 13px;
+  line-height: 24px;
+  opacity: 0.87;
+  padding: 0 4px;
+  transition: opacity 0.15s;
+}
+
+.nav-link:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+
+.icon-btn-apps {
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.icon-btn-apps:hover {
+  background: rgba(232, 234, 237, 0.08);
+}
+
+.avatar-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #8ab4f8;
+  color: #202124;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+/* Center Dashboard Content */
+.dashboard-center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-bottom: 80px;
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.google-logo {
+  margin-bottom: 38px;
+  display: flex;
+  justify-content: center;
+}
+
+/* Omnibox Search Box */
+.search-container {
+  width: 100%;
+  max-width: 561px;
+  margin-bottom: 32px;
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  background-color: #303134;
+  border: 1px solid transparent;
+  border-radius: 24px;
+  height: 46px;
+  padding: 0 14px;
+  gap: 12px;
+  box-shadow: 0 1px 6px 0 rgba(0, 0, 0, 0.28);
+  transition: background-color 0.15s, box-shadow 0.15s, border-color 0.15s;
+}
+
+.search-box:hover {
+  background-color: #3c4043;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.4);
+}
+
+.search-box:focus-within {
+  background-color: #303134;
+  border-color: #5f6368;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.6);
+}
+
+.search-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.search-box input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 16px;
+  color: #e8eaed;
+  line-height: 24px;
+}
+
+.search-box input::placeholder {
+  color: #9aa0a6;
+}
+
+.search-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.search-action-btn {
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.search-action-btn:hover {
+  background: rgba(232, 234, 237, 0.08);
+}
+
+/* Shortcuts Grid */
+.shortcuts-grid {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  max-width: 560px;
+}
+
+.shortcut-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 80px;
+  text-decoration: none;
+  cursor: pointer;
+  padding: 8px 0;
+  border-radius: 8px;
+  transition: background-color 0.15s, transform 0.1s;
+}
+
+.shortcut-item:hover {
+  background-color: rgba(232, 234, 237, 0.08);
+}
+
+.shortcut-item:active {
+  transform: scale(0.96);
+}
+
+.shortcut-icon-circle {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background-color: #303134;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+  transition: background-color 0.15s;
+}
+
+.shortcut-item:hover .shortcut-icon-circle {
+  background-color: #3c4043;
+}
+
+.shortcut-title {
+  font-size: 12px;
+  color: #e8eaed;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 72px;
+}
+
+/* Customize Chrome Button */
+.bottom-right-dock {
+  position: fixed;
+  bottom: 24px;
+  right: 88px; /* Offset so it sits beside Tester Notepad's floating icon */
+  z-index: 100;
+}
+
+.customize-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 16px;
+  background-color: #28292a;
+  border: 1px solid #3c4043;
+  border-radius: 18px;
+  color: #8ab4f8;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3);
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.customize-btn:hover {
+  background-color: #35363a;
+  border-color: #5f6368;
+}
+
+.customize-btn:active {
+  background-color: #202124;
+}

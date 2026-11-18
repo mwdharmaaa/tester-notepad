@@ -17,7 +17,7 @@
     "sidePanel"
   ],
   "action": {
-    "default_title": "Tester Notepad (Click or Alt+L to toggle drawer / open dashboard)",
+    "default_title": "Tester Notepad (Click or Alt+L to toggle drawer)",
     "default_icon": {
       "16": "icons/icon16.png",
       "32": "icons/icon32.png",
@@ -26,7 +26,7 @@
     }
   },
   "chrome_url_overrides": {
-    "newtab": "dashboard/dashboard.html"
+    "newtab": "newtab/newtab.html"
   },
   "side_panel": {
     "default_path": "sidepanel/sidepanel.html"
@@ -55,7 +55,7 @@
       "suggested_key": {
         "default": "Alt+L"
       },
-      "description": "Toggle Tester Notepad Drawer or Open Dashboard"
+      "description": "Toggle Tester Notepad Drawer"
     }
   }
 }
