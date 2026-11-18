@@ -85,9 +85,10 @@ async function toggleTabDrawer(tab) {
   }
 
   try {
-    await chrome.tabs.sendMessage(tab.id, { action: "TOGGLE_DRAWER" });
+    const res = await chrome.tabs.sendMessage(tab.id, { action: "TOGGLE_DRAWER" });
+    if (res?.status === "OK") return;
   } catch (err) {
-    // Content script not ready on this tab yet, dynamically inject then toggle
+    // Content script not ready on this tab yet (e.g. extension just reloaded or tab opened before extension)
     try {
       await chrome.scripting.insertCSS({
         target: { tabId: tab.id },
@@ -97,9 +98,11 @@ async function toggleTabDrawer(tab) {
         target: { tabId: tab.id },
         files: ["content/content.js"]
       });
-      setTimeout(() => {
-        chrome.tabs.sendMessage(tab.id, { action: "TOGGLE_DRAWER" }).catch(() => {});
-      }, 150);
+      setTimeout(async () => {
+        try {
+          await chrome.tabs.sendMessage(tab.id, { action: "TOGGLE_DRAWER" });
+        } catch (_) {}
+      }, 100);
     } catch (injectErr) {
       console.warn("[Tester Notepad] Dynamic injection failed:", injectErr);
     }

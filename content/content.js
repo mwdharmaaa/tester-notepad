@@ -133,9 +133,15 @@
   });
 
   // Background commands
-  chrome.runtime.onMessage.addListener((message) => {
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === "TOGGLE_DRAWER") {
       toggleDrawer();
+      sendResponse({ status: "OK", isOpen: isDrawerOpen });
+      return true;
+    }
+    if (message.action === "PING") {
+      sendResponse({ status: "PONG" });
+      return true;
     }
   });
 
@@ -358,25 +364,25 @@
 
       /* Slide-out Drawer Panel */
       .tn-drawer {
-        pointer-events: auto;
-        position: fixed;
-        top: 0;
-        right: 0;
-        width: 395px;
-        max-width: calc(100vw - 16px);
-        height: 100vh;
-        background: #09090b;
-        color: #f4f4f5;
-        border-left: 1px solid #27272a;
-        box-shadow: -8px 0 28px rgba(0, 0, 0, 0.8);
-        z-index: 2147483647;
-        display: flex;
-        flex-direction: column;
-        transform: translateX(100%);
-        transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+        pointer-events: auto !important;
+        position: fixed !important;
+        top: 0 !important;
+        right: 0 !important;
+        width: 395px !important;
+        max-width: calc(100vw - 16px) !important;
+        height: 100vh !important;
+        background: #09090b !important;
+        color: #f4f4f5 !important;
+        border-left: 1px solid #27272a !important;
+        box-shadow: -8px 0 28px rgba(0, 0, 0, 0.8) !important;
+        z-index: 2147483647 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        transform: translateX(100%) !important;
+        transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
       }
       .tn-drawer.tn-open {
-        transform: translateX(0);
+        transform: translateX(0) !important;
       }
 
       /* Light Mode Monochrome Variant */
@@ -1926,17 +1932,36 @@
     }
   }
 
-  // Global Keyboard Shortcuts
-  window.addEventListener("keydown", (e) => {
-    if (e.altKey && (e.key === "l" || e.key === "L" || e.key === "n" || e.key === "N")) {
+  // Global Keyboard Shortcuts (Capture phase to ensure website listeners do not block it)
+  function handleGlobalKeydown(e) {
+    if (!e) return;
+    const isAlt = e.altKey;
+    const isL =
+      e.code === "KeyL" ||
+      e.keyCode === 76 ||
+      e.which === 76 ||
+      (typeof e.key === "string" && e.key.toLowerCase() === "l");
+    const isN =
+      e.code === "KeyN" ||
+      e.keyCode === 78 ||
+      e.which === 78 ||
+      (typeof e.key === "string" && e.key.toLowerCase() === "n");
+
+    if (isAlt && (isL || isN)) {
       e.preventDefault();
+      e.stopPropagation();
       toggleDrawer();
+      return;
     }
-    if (e.key === "Escape" && isDrawerOpen && !isPinned) {
+
+    if (e.key === "Escape" && isDrawerOpen) {
       isDrawerOpen = false;
       render();
     }
-  });
+  }
+
+  window.addEventListener("keydown", handleGlobalKeydown, true);
+  document.addEventListener("keydown", handleGlobalKeydown, true);
 
   // Initialize
   loadData().then(() => {

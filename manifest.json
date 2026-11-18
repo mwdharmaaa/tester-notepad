@@ -15,6 +15,9 @@
     "activeTab",
     "scripting"
   ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
   "action": {
     "default_title": "Tester Notepad (Click or Alt+L to toggle drawer)",
     "default_icon": {
@@ -30,9 +33,7 @@
   "content_scripts": [
     {
       "matches": [
-        "http://*/*",
-        "https://*/*",
-        "file:///*"
+        "<all_urls>"
       ],
       "js": [
         "content/content.js"
