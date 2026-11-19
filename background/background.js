@@ -1,5 +1,5 @@
 // Tester Notepad - Background Service Worker
-// Manages data seeding, commands, in-page drawer toggling, and internal page fallback
+// Manages initial data seeding, commands, and in-page drawer toggling on the right
 
 const DEFAULT_SERVERS = [
   {
@@ -71,82 +71,12 @@ chrome.runtime.onInstalled.addListener(async (details) => {
   }
 });
 
-let floatingPopupWinId = null;
-
-// Track when popup window is closed
-chrome.windows.onRemoved.addListener((closedId) => {
-  if (closedId === floatingPopupWinId) {
-    floatingPopupWinId = null;
-  }
-});
-
-/**
- * Fallback Floating Window for internal restricted pages (chrome://newtab, etc.)
- * where Chrome prohibits content script injection.
- */
-async function toggleFloatingPopup() {
-  if (floatingPopupWinId !== null) {
-    try {
-      const existing = await chrome.windows.get(floatingPopupWinId);
-      if (existing) {
-        await chrome.windows.remove(floatingPopupWinId);
-        floatingPopupWinId = null;
-        return;
-      }
-    } catch (_) {
-      floatingPopupWinId = null;
-    }
-  }
-
-  // Check if any window with floating.html is open
-  try {
-    const wins = await chrome.windows.getAll({ populate: true });
-    for (const w of wins) {
-      if (w.tabs && w.tabs.some((t) => t.url && t.url.includes("floating/floating.html"))) {
-        await chrome.windows.remove(w.id);
-        floatingPopupWinId = null;
-        return;
-      }
-    }
-  } catch (_) {}
-
-  // Open right-docked minimal popup window
-  const width = 420;
-  let height = 750;
-  let top = 40;
-  let left = 1200;
-
-  try {
-    const cur = await chrome.windows.getLastFocused();
-    if (cur && cur.width && cur.height) {
-      height = Math.max(500, cur.height - 50);
-      top = Math.max(0, (cur.top || 0) + 30);
-      left = Math.max(0, (cur.left || 0) + cur.width - width - 20);
-    }
-  } catch (_) {}
-
-  try {
-    const newWin = await chrome.windows.create({
-      url: chrome.runtime.getURL("floating/floating.html"),
-      type: "popup",
-      width,
-      height,
-      left,
-      top,
-      focused: true
-    });
-    floatingPopupWinId = newWin.id;
-  } catch (err) {
-    console.error("[Tester Notepad] Error opening popup fallback:", err);
-  }
-}
-
 /**
  * Toggle In-Page Floating Drawer on Active Tab
- * - Pinned to the right side of the screen (right: 0).
- * - Non-blocking overlay (DOES NOT shift or squeeze the webpage).
- * - Clicking or typing anywhere outside the drawer DOES NOT close it.
- * - Only toggled via Alt+L or clicking the extension icon.
+ * - Strictly pinned to the right side of the screen (KANAN, right: 0).
+ * - Non-blocking floating overlay on top of the web page (zero layout shift).
+ * - Tapping anywhere else outside does NOT dismiss or hide the drawer.
+ * - Toggled via Alt+L, toolbar icon click, or in-page trigger button.
  */
 async function toggleActiveTabDrawer(tab) {
   if (!tab) {
@@ -155,19 +85,13 @@ async function toggleActiveTabDrawer(tab) {
   }
   if (!tab?.id) return;
 
-  const isInternalPage = !tab.url ||
-    tab.url.startsWith("chrome://") ||
-    tab.url.startsWith("edge://") ||
-    tab.url.startsWith("about:") ||
-    tab.url.startsWith("chrome-extension://");
-
-  if (isInternalPage) {
-    // Internal restricted pages where Chrome security blocks content scripts
-    await toggleFloatingPopup();
+  // Don't inject on restricted internal browser pages
+  if (tab.url && (tab.url.startsWith("chrome://") || tab.url.startsWith("edge://") || tab.url.startsWith("about:"))) {
+    console.warn("[Tester Notepad] Drawer operates on web pages. Restricted page:", tab.url);
     return;
   }
 
-  // Normal Web Page: Attempt direct messaging first
+  // Attempt direct messaging to content script
   try {
     const ping = await chrome.tabs.sendMessage(tab.id, { action: "PING" });
     if (ping?.status === "PONG") {
@@ -193,19 +117,18 @@ async function toggleActiveTabDrawer(tab) {
       } catch (_) {}
     }, 60);
   } catch (injectErr) {
-    console.warn("[Tester Notepad] Injection failed, falling back to popup window:", injectErr);
-    await toggleFloatingPopup();
+    console.warn("[Tester Notepad] Dynamic injection failed:", injectErr);
   }
 }
 
-// 1. Keyboard Shortcut (Alt+L) Trigger
+// 1. Keyboard Shortcut (Alt+L) Trigger -> Toggle in-page drawer on the right
 chrome.commands.onCommand.addListener(async (command) => {
   if (command === "toggle_drawer" || command === "_execute_action") {
     await toggleActiveTabDrawer();
   }
 });
 
-// 2. Toolbar Icon Click Trigger
+// 2. Toolbar Icon Click Trigger -> Toggle in-page drawer on the right
 chrome.action.onClicked.addListener(async (tab) => {
   await toggleActiveTabDrawer(tab);
 });
