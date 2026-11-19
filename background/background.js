@@ -1,5 +1,5 @@
 // Tester Notepad - Background Service Worker
-// Manages initial data seeding, commands, and dedicated floating window lifecycle
+// Manages initial data seeding, commands, and in-page drawer toggling
 
 const DEFAULT_SERVERS = [
   {
@@ -71,144 +71,66 @@ chrome.runtime.onInstalled.addListener(async (details) => {
   }
 });
 
-// Floating Window ID tracker
-let floatingWindowId = null;
-let activeFloatingPort = null;
-
-// Track port connection from floating window
-chrome.runtime.onConnect.addListener((port) => {
-  if (port.name === "tester-notepad-floating" || port.name === "tester-notepad-sidepanel") {
-    activeFloatingPort = port;
-    port.onMessage.addListener((msg) => {
-      if (msg?.type === "FLOATING_MOUNTED" && msg.windowId) {
-        floatingWindowId = msg.windowId;
-      }
-    });
-    port.onDisconnect.addListener(() => {
-      if (activeFloatingPort === port) {
-        activeFloatingPort = null;
-      }
-    });
-  }
-});
-
-// Track when window is closed by user (via OS close button)
-chrome.windows.onRemoved.addListener((closedWinId) => {
-  if (closedWinId === floatingWindowId) {
-    floatingWindowId = null;
-    activeFloatingPort = null;
-  }
-});
-
 /**
- * Toggle Floating Notepad Window
- * Creates a dedicated minimal popup window that floats ON TOP of Chrome.
- * - Chrome layer is below, extension layer is on top.
- * - DOES NOT shrink, squeeze, or shift ("bukan ngegeser") the Chrome page.
- * - Works 100% reliably on Chrome New Tab (dashboard) and all websites.
- * - Non-blocking to the underlying browser.
+ * Toggle In-Page Floating Drawer on Active Tab
+ * - Pinned to the right side of the screen.
+ * - Non-blocking overlay (DOES NOT shift or squeeze the webpage).
+ * - Clicking or typing anywhere outside the drawer DOES NOT close it.
+ * - Only toggled via Alt+L or clicking the extension icon.
  */
-async function toggleFloatingNotepad() {
-  // 1. If window is already tracked, close it (Toggle OFF)
-  if (floatingWindowId !== null) {
+async function toggleActiveTabDrawer(tab) {
+  if (!tab) {
+    const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    tab = activeTab;
+  }
+  if (!tab?.id) return;
+
+  // Attempt direct messaging to content script
+  try {
+    const res = await chrome.tabs.sendMessage(tab.id, { action: "TOGGLE_DRAWER" });
+    if (res?.status === "OK") return;
+  } catch (_) {
+    // If content script was not ready, dynamically inject
     try {
-      const existing = await chrome.windows.get(floatingWindowId);
-      if (existing) {
-        if (activeFloatingPort) {
-          try {
-            activeFloatingPort.postMessage({ action: "CLOSE_WINDOW" });
-          } catch (_) {}
-        }
-        await chrome.windows.remove(floatingWindowId);
-        floatingWindowId = null;
-        activeFloatingPort = null;
-        return;
-      }
-    } catch (_) {
-      floatingWindowId = null;
-      activeFloatingPort = null;
+      await chrome.scripting.insertCSS({
+        target: { tabId: tab.id },
+        files: ["content/content.css"]
+      });
+      await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        files: ["content/content.js"]
+      });
+      setTimeout(async () => {
+        try {
+          await chrome.tabs.sendMessage(tab.id, { action: "TOGGLE_DRAWER" });
+        } catch (_) {}
+      }, 60);
+    } catch (injectErr) {
+      console.warn("[Tester Notepad] Cannot inject on internal/restricted tab:", injectErr);
     }
-  }
-
-  // 2. Also search if any open window contains floating.html
-  try {
-    const allWins = await chrome.windows.getAll({ populate: true });
-    for (const win of allWins) {
-      if (win.type === "popup" && win.tabs) {
-        const hasOurTab = win.tabs.some(
-          (t) => t.url && (t.url.includes("floating/floating.html") || t.url.includes("sidepanel/sidepanel.html"))
-        );
-        if (hasOurTab) {
-          await chrome.windows.remove(win.id);
-          floatingWindowId = null;
-          activeFloatingPort = null;
-          return;
-        }
-      }
-    }
-  } catch (_) {}
-
-  // 3. Toggle ON: Create new floating window positioned on top of Chrome
-  const width = 420;
-  let height = 750;
-  let top = 40;
-  let left = 1200;
-
-  try {
-    const currentWin = await chrome.windows.getLastFocused();
-    if (currentWin && currentWin.width && currentWin.height) {
-      height = Math.max(500, currentWin.height - 50);
-      top = Math.max(0, (currentWin.top || 0) + 30);
-      left = Math.max(0, (currentWin.left || 0) + currentWin.width - width - 20);
-    }
-  } catch (err) {
-    console.warn("[Tester Notepad] Could not query focused window:", err);
-  }
-
-  try {
-    const createdWin = await chrome.windows.create({
-      url: chrome.runtime.getURL("floating/floating.html"),
-      type: "popup",
-      width: width,
-      height: height,
-      left: left,
-      top: top,
-      focused: true
-    });
-    floatingWindowId = createdWin.id;
-  } catch (err) {
-    console.error("[Tester Notepad] Error opening floating window:", err);
   }
 }
 
 // 1. Keyboard Shortcut (Alt+L) Trigger
 chrome.commands.onCommand.addListener(async (command) => {
   if (command === "toggle_drawer" || command === "_execute_action") {
-    await toggleFloatingNotepad();
+    await toggleActiveTabDrawer();
   }
 });
 
 // 2. Toolbar Icon Click Trigger
-chrome.action.onClicked.addListener(async () => {
-  await toggleFloatingNotepad();
+chrome.action.onClicked.addListener(async (tab) => {
+  await toggleActiveTabDrawer(tab);
 });
 
-// 3. Message Listener from Content Script or Floating Window
+// 3. Message Listener
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.action === "TOGGLE_FLOATING_NOTEPAD" || message.action === "TOGGLE_DRAWER") {
-    toggleFloatingNotepad().then(() => sendResponse({ status: "OK" }));
+  if (message.action === "TOGGLE_DRAWER") {
+    toggleActiveTabDrawer().then(() => sendResponse({ status: "OK" }));
     return true;
   }
   if (message.action === "PING") {
     sendResponse({ status: "PONG" });
-    return true;
-  }
-  if (message.action === "CLOSE_FLOATING") {
-    if (floatingWindowId !== null) {
-      chrome.windows.remove(floatingWindowId).catch(() => {});
-      floatingWindowId = null;
-    }
-    sendResponse({ status: "OK" });
     return true;
   }
 });

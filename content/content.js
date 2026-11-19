@@ -246,7 +246,11 @@
       .replace(/'/g, "&#039;");
   }
 
+  let lastToggleTime = 0;
   function toggleDrawer() {
+    const now = Date.now();
+    if (now - lastToggleTime < 250) return;
+    lastToggleTime = now;
     isDrawerOpen = !isDrawerOpen;
     render();
   }
@@ -1526,11 +1530,7 @@
     const trigger = shadow.getElementById("tn-trigger");
     if (trigger) {
       trigger.addEventListener("click", () => {
-        try {
-          chrome.runtime.sendMessage({ action: "TOGGLE_FLOATING_NOTEPAD" });
-        } catch (_) {
-          toggleDrawer();
-        }
+        toggleDrawer();
       });
     }
 
@@ -1954,17 +1954,8 @@
     if (isAlt && (isL || isN)) {
       e.preventDefault();
       e.stopPropagation();
-      try {
-        chrome.runtime.sendMessage({ action: "TOGGLE_FLOATING_NOTEPAD" });
-      } catch (_) {
-        toggleDrawer();
-      }
+      toggleDrawer();
       return;
-    }
-
-    if (e.key === "Escape" && isDrawerOpen) {
-      isDrawerOpen = false;
-      render();
     }
   }
 
