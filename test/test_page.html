@@ -156,7 +156,7 @@
       <h1 style="font-size: 16px; font-weight: 700; letter-spacing: 0.5px;">WEB TESTER VERIFICATION PORTAL</h1>
       <span style="font-size: 11px; color: #71717a;">TEST HARNESS FOR TESTER NOTEPAD EXTENSION</span>
     </div>
-    <span class="badge">E2E TEST</span>
+    <button id="btn-toggle-notepad" class="badge" style="cursor: pointer; background: #27272a; border: 1px solid #3f3f46; color: #fff;">TOGGLE NOTEPAD (ALT+L)</button>
   </header>
 
   <main>
@@ -249,6 +249,21 @@
     function handleLoginSubmit() {
       logEvent(`SUCCESS: Form submitted with Email: "${emailInput.value}"`);
       alert(`Login Successful with credentials:\nEmail: ${emailInput.value}\nPassword: ${passInput.value.replace(/./g, '*')}`);
+    }
+
+    const toggleBtn = document.getElementById("btn-toggle-notepad");
+    if (toggleBtn) {
+      toggleBtn.addEventListener("click", () => {
+        window.dispatchEvent(new KeyboardEvent("keydown", {
+          key: "l",
+          code: "KeyL",
+          keyCode: 76,
+          which: 76,
+          altKey: true,
+          bubbles: true,
+          cancelable: true
+        }));
+      });
     }
   </script>
 

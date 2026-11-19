@@ -69,7 +69,71 @@ chrome.runtime.onInstalled.addListener(async (details) => {
   if (!data.settings) {
     await chrome.storage.local.set({ settings: DEFAULT_SETTINGS });
   }
+
+  // Auto-sync open extension tabs and live web pages
+  await syncExtensionTabs();
+  await injectIntoExistingWebTabs();
 });
+
+/**
+ * Automatically refresh any stale extension tabs (e.g. test_page.html) so they pick up latest scripts
+ */
+async function syncExtensionTabs() {
+  try {
+    const extBaseUrl = chrome.runtime.getURL("");
+    const tabs = await chrome.tabs.query({});
+    for (const tab of tabs) {
+      if (tab.url && tab.url.startsWith(extBaseUrl)) {
+        await chrome.tabs.reload(tab.id);
+      }
+    }
+  } catch (_) {}
+}
+
+/**
+ * Automatically inject content engine into already open web tabs on extension start/update
+ */
+async function injectIntoExistingWebTabs() {
+  try {
+    const tabs = await chrome.tabs.query({ url: ["http://*/*", "https://*/*", "file:///*"] });
+    for (const tab of tabs) {
+      try {
+        await chrome.scripting.insertCSS({
+          target: { tabId: tab.id },
+          files: ["content/content.css"]
+        });
+        await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          files: ["content/content.js"]
+        });
+      } catch (_) {}
+    }
+  } catch (_) {}
+}
+
+// Run initial sync on service worker startup
+syncExtensionTabs();
+injectIntoExistingWebTabs();
+
+/**
+ * Robust active tab resolver for MV3 service workers across Wayland/GNOME
+ */
+async function getActiveTab(preferredTab) {
+  if (preferredTab?.id) return preferredTab;
+  try {
+    const [focused] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+    if (focused?.id) return focused;
+  } catch (_) {}
+  try {
+    const [current] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (current?.id) return current;
+  } catch (_) {}
+  try {
+    const [anyActive] = await chrome.tabs.query({ active: true });
+    if (anyActive?.id) return anyActive;
+  } catch (_) {}
+  return null;
+}
 
 /**
  * Check if a URL cannot have content scripts injected by browser security
@@ -126,19 +190,40 @@ async function ensureInjected(tabId) {
  * - Toggled via Alt+L, toolbar icon click, or in-page trigger button.
  * - NEVER creates new tabs. NEVER redirects tabs.
  */
-async function toggleActiveTabDrawer(tab) {
-  if (!tab) {
-    const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    tab = activeTab;
-  }
+async function toggleActiveTabDrawer(preferredTab) {
+  const tab = await getActiveTab(preferredTab);
   if (!tab?.id) return;
 
-  // On restricted browser pages where Chrome blocks content scripts (chrome://, etc.), return cleanly
-  if (isRestrictedUrl(tab.url)) {
+  // 1. If our own extension tab (e.g. test_page.html)
+  if (tab.url && tab.url.startsWith(chrome.runtime.getURL(""))) {
+    try {
+      const res = await chrome.tabs.sendMessage(tab.id, { action: "TOGGLE_DRAWER" });
+      if (res?.status === "OK") return;
+    } catch (_) {
+      // Stale tab lacking the injected script -> reload it so it picks up the latest DOM
+      await chrome.tabs.reload(tab.id);
+      return;
+    }
     return;
   }
 
-  // Normal Web Page (http://, https://, file://)
+  // 2. On restricted browser pages where Chrome blocks content scripts (chrome://, etc.)
+  if (isRestrictedUrl(tab.url)) {
+    try {
+      await chrome.action.setBadgeText({ tabId: tab.id, text: "WEB" });
+      await chrome.action.setBadgeBackgroundColor({ tabId: tab.id, color: "#e11d48" });
+      await chrome.action.setTitle({
+        tabId: tab.id,
+        title: "Tester Notepad: Buka di halaman web (http/https) untuk mengambang di kanan"
+      });
+      setTimeout(() => {
+        chrome.action.setBadgeText({ tabId: tab.id, text: "" }).catch(() => {});
+      }, 3500);
+    } catch (_) {}
+    return;
+  }
+
+  // 3. Normal Web Page (http://, https://, file://)
   const ready = await ensureInjected(tab.id);
   if (ready) {
     await chrome.tabs.sendMessage(tab.id, { action: "TOGGLE_DRAWER" }).catch(() => {});

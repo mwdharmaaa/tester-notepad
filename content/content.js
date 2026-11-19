@@ -36,7 +36,14 @@
     autofillNotification: true
   };
 
-  let isDrawerOpen = false;
+  const urlParams = typeof window !== "undefined" && window.location ? new URLSearchParams(window.location.search) : null;
+  const priorOpenState = typeof window !== "undefined" && window.__TESTER_NOTEPAD_IS_OPEN__ !== undefined
+    ? Boolean(window.__TESTER_NOTEPAD_IS_OPEN__)
+    : false;
+  let isDrawerOpen = priorOpenState || (urlParams ? urlParams.get("open") === "1" : false);
+  if (typeof window !== "undefined") {
+    window.__TESTER_NOTEPAD_IS_OPEN__ = isDrawerOpen;
+  }
   let isPinned = false;
   let activeTab = "credentials"; // "credentials", "scratchpad", "generators", "settings"
   let searchQuery = "";
@@ -326,7 +333,7 @@
   let lastToggleTime = 0;
   function toggleDrawer(forceState) {
     const now = Date.now();
-    if (typeof forceState !== "boolean" && now - lastToggleTime < 300) {
+    if (typeof forceState !== "boolean" && now - lastToggleTime < 450) {
       return;
     }
     lastToggleTime = now;
@@ -334,6 +341,10 @@
       isDrawerOpen = forceState;
     } else {
       isDrawerOpen = !isDrawerOpen;
+    }
+
+    if (typeof window !== "undefined") {
+      window.__TESTER_NOTEPAD_IS_OPEN__ = isDrawerOpen;
     }
 
     const drawer = shadow.getElementById("tn-drawer");
