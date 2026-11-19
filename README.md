@@ -1,15 +1,21 @@
-# Tester Notepad - Web QA Credential & Scratchpad Floating Drawer
+# Tester Notepad - Web QA Credential & Floating Layer Workspace
 
-> **Browser Extension Manifest V3** dengan desain ultra-minimalis monokrom (hitam, putih, abu-abu) tanpa emoji, dirancang khusus untuk Web Tester / QA Engineer. Ekstensi ini berupa **floating in-page drawer** non-blocking di sisi kanan layar untuk menyimpan, menyalin kredensial (Email & Password), autofill form login, serta mencatat data pengujian sementara secara instan — **tanpa membuka tab baru, dan halaman web tetap dapat diklik/dioperasikan secara bebas saat drawer aktif**.
+> **Browser Extension Manifest V3** dengan desain ultra-minimalis monokrom (hitam, putih, abu-abu) tanpa emoji, dirancang khusus untuk Web Tester / QA Engineer. Ekstensi ini berupa **floating layer** yang melayang di atas browser Chrome (urutan layer: Chrome di bawah, ekstensi di atas) — **tanpa menggeser/menyusutkan (split-screen) jendela Chrome, dan bekerja penuh di Dashboard New Tab maupun halaman web manapun melalui shortcut Alt + L**.
 
 ---
 
 ## Fitur Utama
 
-1. **Pure Floating In-Page Drawer (Tanpa Tab Baru):**
-   - Tidak membuka tab baru atau merubah halaman apa pun.
-   - Cukup tekan **`Alt + L`** (atau `Alt + N`), klik icon toolbar ekstensi, atau klik icon floating di pojok kanan bawah: drawer langsung meluncur keluar dari kanan layar di halaman web aktif!
-   - Tekan **`Alt + L`** lagi atau klik tombol Close (**`X`**) di header untuk menutupnya.
+1. **Floating Window di Atas Layer Chrome (Tanpa Menggeser Tampilan Web):**
+   - Bukan side panel yang membagi layar (split screen) atau menggeser halaman Chrome.
+   - Melayang bebas di sisi kanan layar di atas layer Chrome (Chrome di layer bawah, ekstensi di layer atas).
+   - Ukuran dan posisi halaman Chrome tetap 100% utuh tanpa bergeser sedikit pun.
+   - Bekerja secara universal di **Chrome Dashboard New Tab (`chrome://newtab`)**, halaman internal, hingga situs web eksternal.
+
+2. **Shortcut Alt + L Langsung Aktif:**
+   - Cukup tekan **`Alt + L`** di Chrome untuk langsung memunculkan atau menutup jendela floating notepad.
+   - Juga dapat dibuka melalui klik icon ekstensi di toolbar browser atau icon floating pojok kanan bawah.
+   - Tekan **`Alt + L`** atau **`Esc`** saat jendela aktif untuk menutup seketika.
 
 2. **Non-Blocking Interaction (Bisa Klik & Ketik di Web Tanpa Menutup Drawer):**
    - Tidak ada backdrop gelap yang menghalangi halaman web.

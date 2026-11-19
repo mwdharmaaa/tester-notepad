@@ -14,17 +14,13 @@
     "clipboardWrite",
     "activeTab",
     "scripting",
-    "sidePanel",
     "tabs"
   ],
   "host_permissions": [
     "<all_urls>"
   ],
-  "side_panel": {
-    "default_path": "sidepanel/sidepanel.html"
-  },
   "action": {
-    "default_title": "Tester Notepad (Click or Alt+L to toggle drawer)",
+    "default_title": "Tester Notepad (Alt+L to toggle floating notepad)",
     "default_icon": {
       "16": "icons/icon16.png",
       "32": "icons/icon32.png",
@@ -54,7 +50,7 @@
       "suggested_key": {
         "default": "Alt+L"
       },
-      "description": "Toggle Tester Notepad Drawer"
+      "description": "Toggle Floating Tester Notepad"
     }
   }
 }

@@ -23,6 +23,9 @@ REQUIRED_FILES=(
   "sidepanel/sidepanel.html"
   "sidepanel/sidepanel.css"
   "sidepanel/sidepanel.js"
+  "floating/floating.html"
+  "floating/floating.css"
+  "floating/floating.js"
   "test/test_page.html"
 )
 
@@ -52,6 +55,7 @@ JS_FILES=(
   "content/content.js"
   "popup/popup.js"
   "sidepanel/sidepanel.js"
+  "floating/floating.js"
 )
 for js in "${JS_FILES[@]}"; do
   if node -c "$js" 2>/dev/null || true; then

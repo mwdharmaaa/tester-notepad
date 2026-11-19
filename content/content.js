@@ -1526,7 +1526,11 @@
     const trigger = shadow.getElementById("tn-trigger");
     if (trigger) {
       trigger.addEventListener("click", () => {
-        toggleDrawer();
+        try {
+          chrome.runtime.sendMessage({ action: "TOGGLE_FLOATING_NOTEPAD" });
+        } catch (_) {
+          toggleDrawer();
+        }
       });
     }
 
@@ -1950,7 +1954,11 @@
     if (isAlt && (isL || isN)) {
       e.preventDefault();
       e.stopPropagation();
-      toggleDrawer();
+      try {
+        chrome.runtime.sendMessage({ action: "TOGGLE_FLOATING_NOTEPAD" });
+      } catch (_) {
+        toggleDrawer();
+      }
       return;
     }
 

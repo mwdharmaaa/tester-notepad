@@ -1,5 +1,5 @@
 // Tester Notepad - Background Service Worker
-// Manages initial data seeding, commands, tab messaging, and unified drawer invocation
+// Manages initial data seeding, commands, and dedicated floating window lifecycle
 
 const DEFAULT_SERVERS = [
   {
@@ -54,7 +54,7 @@ chrome.runtime.onInstalled.addListener(async (details) => {
   if (!data.accounts || !Array.isArray(data.accounts) || data.accounts.length === 0) {
     await chrome.storage.local.set({ accounts: DEFAULT_ACCOUNTS });
   } else {
-    const cleaned = data.accounts.map(a => ({
+    const cleaned = data.accounts.map((a) => ({
       id: a.id,
       email: a.email || a.label || "",
       password: a.password || ""
@@ -71,127 +71,144 @@ chrome.runtime.onInstalled.addListener(async (details) => {
   }
 });
 
-// Active Side Panel Port Tracker (windowId -> port)
-const activeSidePanelWindows = new Map();
+// Floating Window ID tracker
+let floatingWindowId = null;
+let activeFloatingPort = null;
 
+// Track port connection from floating window
 chrome.runtime.onConnect.addListener((port) => {
-  if (port.name === "tester-notepad-sidepanel") {
-    let boundWindowId = null;
+  if (port.name === "tester-notepad-floating" || port.name === "tester-notepad-sidepanel") {
+    activeFloatingPort = port;
     port.onMessage.addListener((msg) => {
-      if (msg?.type === "SIDEPANEL_MOUNTED" && msg.windowId) {
-        boundWindowId = msg.windowId;
-        activeSidePanelWindows.set(boundWindowId, port);
+      if (msg?.type === "FLOATING_MOUNTED" && msg.windowId) {
+        floatingWindowId = msg.windowId;
       }
     });
     port.onDisconnect.addListener(() => {
-      if (boundWindowId) {
-        activeSidePanelWindows.delete(boundWindowId);
+      if (activeFloatingPort === port) {
+        activeFloatingPort = null;
       }
     });
+  }
+});
+
+// Track when window is closed by user (via OS close button)
+chrome.windows.onRemoved.addListener((closedWinId) => {
+  if (closedWinId === floatingWindowId) {
+    floatingWindowId = null;
+    activeFloatingPort = null;
   }
 });
 
 /**
- * Unified Drawer & Side Panel Toggle
- * On chrome://newtab and internal pages: opens/toggles the native Chrome Side Panel on the right.
- * On normal web pages: toggles the in-page floating drawer.
- * Never creates new tabs or disrupts page clickability.
+ * Toggle Floating Notepad Window
+ * Creates a dedicated minimal popup window that floats ON TOP of Chrome.
+ * - Chrome layer is below, extension layer is on top.
+ * - DOES NOT shrink, squeeze, or shift ("bukan ngegeser") the Chrome page.
+ * - Works 100% reliably on Chrome New Tab (dashboard) and all websites.
+ * - Non-blocking to the underlying browser.
  */
-async function toggleTabDrawer(tab) {
-  if (!tab?.id) return;
-
-  const isInternalPage = !tab.url || 
-    tab.url.startsWith("chrome://") || 
-    tab.url.startsWith("edge://") || 
-    tab.url.startsWith("about:") || 
-    tab.url.startsWith("chrome-extension://");
-
-  if (isInternalPage) {
-    // Restricted Chrome Dashboard / Internal Page:
-    // Chrome prohibits content scripts on chrome:// pages, so we dock the
-    // native Chrome Side Panel directly to the right side of the Dashboard!
-    if (chrome.sidePanel && chrome.sidePanel.open) {
-      try {
-        const existingPort = activeSidePanelWindows.get(tab.windowId);
-        if (existingPort) {
-          // Toggle Off: close open side panel
-          existingPort.postMessage({ action: "CLOSE_PANEL" });
-          if (chrome.sidePanel.close) {
-            await chrome.sidePanel.close({ windowId: tab.windowId });
-          }
-          activeSidePanelWindows.delete(tab.windowId);
-        } else {
-          // Toggle On: open side panel docked right beside the dashboard
-          await chrome.sidePanel.open({ windowId: tab.windowId });
+async function toggleFloatingNotepad() {
+  // 1. If window is already tracked, close it (Toggle OFF)
+  if (floatingWindowId !== null) {
+    try {
+      const existing = await chrome.windows.get(floatingWindowId);
+      if (existing) {
+        if (activeFloatingPort) {
+          try {
+            activeFloatingPort.postMessage({ action: "CLOSE_WINDOW" });
+          } catch (_) {}
         }
-      } catch (err) {
-        console.error("[Tester Notepad] Error toggling side panel on internal page:", err);
+        await chrome.windows.remove(floatingWindowId);
+        floatingWindowId = null;
+        activeFloatingPort = null;
+        return;
       }
+    } catch (_) {
+      floatingWindowId = null;
+      activeFloatingPort = null;
     }
-    return;
   }
 
-  // Normal Web Page: Dispatch TOGGLE_DRAWER to in-page content script
+  // 2. Also search if any open window contains floating.html
   try {
-    const res = await chrome.tabs.sendMessage(tab.id, { action: "TOGGLE_DRAWER" });
-    if (res?.status === "OK") return;
-  } catch (err) {
-    // Content script not ready on this tab yet, dynamically inject
-    try {
-      await chrome.scripting.insertCSS({
-        target: { tabId: tab.id },
-        files: ["content/content.css"]
-      });
-      await chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        files: ["content/content.js"]
-      });
-      setTimeout(async () => {
-        try {
-          await chrome.tabs.sendMessage(tab.id, { action: "TOGGLE_DRAWER" });
-        } catch (_) {}
-      }, 100);
-    } catch (injectErr) {
-      console.warn("[Tester Notepad] Dynamic injection failed, fallback to side panel:", injectErr);
-      if (chrome.sidePanel && chrome.sidePanel.open) {
-        try {
-          await chrome.sidePanel.open({ windowId: tab.windowId });
-        } catch (_) {}
+    const allWins = await chrome.windows.getAll({ populate: true });
+    for (const win of allWins) {
+      if (win.type === "popup" && win.tabs) {
+        const hasOurTab = win.tabs.some(
+          (t) => t.url && (t.url.includes("floating/floating.html") || t.url.includes("sidepanel/sidepanel.html"))
+        );
+        if (hasOurTab) {
+          await chrome.windows.remove(win.id);
+          floatingWindowId = null;
+          activeFloatingPort = null;
+          return;
+        }
       }
     }
+  } catch (_) {}
+
+  // 3. Toggle ON: Create new floating window positioned on top of Chrome
+  const width = 420;
+  let height = 750;
+  let top = 40;
+  let left = 1200;
+
+  try {
+    const currentWin = await chrome.windows.getLastFocused();
+    if (currentWin && currentWin.width && currentWin.height) {
+      height = Math.max(500, currentWin.height - 50);
+      top = Math.max(0, (currentWin.top || 0) + 30);
+      left = Math.max(0, (currentWin.left || 0) + currentWin.width - width - 20);
+    }
+  } catch (err) {
+    console.warn("[Tester Notepad] Could not query focused window:", err);
+  }
+
+  try {
+    const createdWin = await chrome.windows.create({
+      url: chrome.runtime.getURL("floating/floating.html"),
+      type: "popup",
+      width: width,
+      height: height,
+      left: left,
+      top: top,
+      focused: true
+    });
+    floatingWindowId = createdWin.id;
+  } catch (err) {
+    console.error("[Tester Notepad] Error opening floating window:", err);
   }
 }
 
-// 1. When extension icon in Chrome toolbar is clicked
-chrome.action.onClicked.addListener(async (tab) => {
-  await toggleTabDrawer(tab);
-});
-
-// 2. When keyboard shortcut (Alt+L) is triggered
+// 1. Keyboard Shortcut (Alt+L) Trigger
 chrome.commands.onCommand.addListener(async (command) => {
-  if (command === "toggle_drawer") {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (tab) {
-      await toggleTabDrawer(tab);
-    }
+  if (command === "toggle_drawer" || command === "_execute_action") {
+    await toggleFloatingNotepad();
   }
 });
 
-// Message listener for sub-components
+// 2. Toolbar Icon Click Trigger
+chrome.action.onClicked.addListener(async () => {
+  await toggleFloatingNotepad();
+});
+
+// 3. Message Listener from Content Script or Floating Window
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === "TOGGLE_FLOATING_NOTEPAD" || message.action === "TOGGLE_DRAWER") {
+    toggleFloatingNotepad().then(() => sendResponse({ status: "OK" }));
+    return true;
+  }
   if (message.action === "PING") {
     sendResponse({ status: "PONG" });
     return true;
   }
-  if (message.action === "OPEN_SIDEPANEL") {
-    const windowId = sender.tab?.windowId;
-    if (windowId && chrome.sidePanel && chrome.sidePanel.open) {
-      chrome.sidePanel.open({ windowId }).then(() => {
-        sendResponse({ status: "OK" });
-      }).catch((e) => {
-        sendResponse({ status: "ERROR", error: e.message });
-      });
-      return true;
+  if (message.action === "CLOSE_FLOATING") {
+    if (floatingWindowId !== null) {
+      chrome.windows.remove(floatingWindowId).catch(() => {});
+      floatingWindowId = null;
     }
+    sendResponse({ status: "OK" });
+    return true;
   }
 });
