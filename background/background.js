@@ -132,7 +132,7 @@ async function ensureInjected(tabId) {
  * - Non-blocking floating overlay on top of the web page (zero layout shift).
  * - Tapping anywhere else outside does NOT dismiss or hide the drawer.
  * - Toggled via Alt+L, toolbar icon click, or in-page trigger button.
- * - If invoked on internal restricted pages (e.g. chrome://newtab), immediately opens the verification portal tab with drawer open.
+ * - NEVER creates new tabs. NEVER redirects tabs.
  */
 async function toggleActiveTabDrawer(tab) {
   if (!tab) {
@@ -141,31 +141,12 @@ async function toggleActiveTabDrawer(tab) {
   }
   if (!tab?.id) return;
 
-  const testPortalUrl = chrome.runtime.getURL("test/test_page.html?open=1");
-
-  // On restricted browser pages where Chrome blocks content scripts (like chrome://newtab):
+  // On restricted browser pages where Chrome blocks content scripts (chrome://, etc.), return cleanly
   if (isRestrictedUrl(tab.url)) {
-    if (tab.url && (tab.url.startsWith("chrome://newtab") || tab.url === "about:blank")) {
-      // User is on blank new tab, update it to the test harness page with drawer open!
-      await chrome.tabs.update(tab.id, { url: testPortalUrl });
-    } else {
-      // User is on chrome://extensions or settings, open or switch to test portal
-      const tabs = await chrome.tabs.query({});
-      const existing = tabs.find(t => t.url && t.url.includes("test/test_page.html"));
-      if (existing?.id) {
-        await chrome.tabs.update(existing.id, { active: true });
-        if (existing.windowId) {
-          await chrome.windows.update(existing.windowId, { focused: true });
-        }
-        await chrome.tabs.sendMessage(existing.id, { action: "TOGGLE_DRAWER" }).catch(() => {});
-      } else {
-        await chrome.tabs.create({ url: testPortalUrl });
-      }
-    }
     return;
   }
 
-  // Normal Web Page (http://, https://, file://, or extension test portal)
+  // Normal Web Page (http://, https://, file://)
   const ready = await ensureInjected(tab.id);
   if (ready) {
     await chrome.tabs.sendMessage(tab.id, { action: "TOGGLE_DRAWER" }).catch(() => {});

@@ -31,9 +31,7 @@
     autofillNotification: true
   };
 
-  let isDrawerOpen =
-    typeof window !== "undefined" &&
-    Boolean(window.location && window.location.search && window.location.search.includes("open=1"));
+  let isDrawerOpen = false;
   let isPinned = false;
   let activeTab = "credentials"; // "credentials", "scratchpad", "generators", "settings"
   let searchQuery = "";
@@ -57,110 +55,167 @@
     trash: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`
   };
 
+  // Resilient Storage Helpers (Guaranteed never to crash)
+  const hasChromeStorage = () =>
+    typeof chrome !== "undefined" && Boolean(chrome.storage && chrome.storage.local);
+
   // Load Initial Storage
   async function loadData() {
     try {
-      const data = await chrome.storage.local.get([
-        STORAGE_KEY_SERVERS,
-        STORAGE_KEY_ACCOUNTS,
-        STORAGE_KEY_SCRATCHPAD,
-        STORAGE_KEY_SETTINGS
-      ]);
-      if (Array.isArray(data.serverCodes)) {
-        serverCodes = data.serverCodes;
+      if (hasChromeStorage()) {
+        const data = await chrome.storage.local.get([
+          STORAGE_KEY_SERVERS,
+          STORAGE_KEY_ACCOUNTS,
+          STORAGE_KEY_SCRATCHPAD,
+          STORAGE_KEY_SETTINGS
+        ]);
+        if (Array.isArray(data.serverCodes)) {
+          serverCodes = data.serverCodes;
+        }
+        if (Array.isArray(data.accounts)) {
+          accounts = data.accounts.map((a) => ({
+            id: a.id,
+            email: a.email || a.label || "",
+            password: a.password || ""
+          }));
+        }
+        if (typeof data.scratchpad === "string") scratchpad = data.scratchpad;
+        if (data.settings) settings = Object.assign(settings, data.settings);
+      } else if (typeof localStorage !== "undefined") {
+        try {
+          const s = localStorage.getItem("tn_servers");
+          const a = localStorage.getItem("tn_accounts");
+          const sp = localStorage.getItem("tn_scratchpad");
+          const st = localStorage.getItem("tn_settings");
+          if (s) serverCodes = JSON.parse(s);
+          if (a) accounts = JSON.parse(a);
+          if (sp) scratchpad = sp;
+          if (st) settings = Object.assign(settings, JSON.parse(st));
+        } catch (_) {}
       }
-      if (Array.isArray(data.accounts)) {
-        accounts = data.accounts.map((a) => ({
-          id: a.id,
-          email: a.email || a.label || "",
-          password: a.password || ""
-        }));
-      }
-      if (typeof data.scratchpad === "string") scratchpad = data.scratchpad;
-      if (data.settings) settings = Object.assign(settings, data.settings);
     } catch (e) {
-      console.warn("[Tester Notepad] Storage load error:", e);
+      console.warn("[Tester Notepad] Storage load warning:", e);
     }
   }
 
   // Save Storage
   async function saveServers(newServers) {
     serverCodes = newServers;
-    await chrome.storage.local.set({ [STORAGE_KEY_SERVERS]: serverCodes });
+    if (hasChromeStorage()) {
+      try {
+        await chrome.storage.local.set({ [STORAGE_KEY_SERVERS]: serverCodes });
+      } catch (_) {}
+    } else if (typeof localStorage !== "undefined") {
+      try {
+        localStorage.setItem("tn_servers", JSON.stringify(serverCodes));
+      } catch (_) {}
+    }
     render();
   }
 
   async function saveAccounts(newAccounts) {
     accounts = newAccounts;
-    await chrome.storage.local.set({ [STORAGE_KEY_ACCOUNTS]: accounts });
+    if (hasChromeStorage()) {
+      try {
+        await chrome.storage.local.set({ [STORAGE_KEY_ACCOUNTS]: accounts });
+      } catch (_) {}
+    } else if (typeof localStorage !== "undefined") {
+      try {
+        localStorage.setItem("tn_accounts", JSON.stringify(accounts));
+      } catch (_) {}
+    }
     render();
   }
 
   async function saveScratchpad(text) {
     scratchpad = text;
-    await chrome.storage.local.set({ [STORAGE_KEY_SCRATCHPAD]: scratchpad });
+    if (hasChromeStorage()) {
+      try {
+        await chrome.storage.local.set({ [STORAGE_KEY_SCRATCHPAD]: scratchpad });
+      } catch (_) {}
+    } else if (typeof localStorage !== "undefined") {
+      try {
+        localStorage.setItem("tn_scratchpad", scratchpad);
+      } catch (_) {}
+    }
   }
 
   async function saveSettings(newSettings) {
     settings = Object.assign(settings, newSettings);
-    await chrome.storage.local.set({ [STORAGE_KEY_SETTINGS]: settings });
+    if (hasChromeStorage()) {
+      try {
+        await chrome.storage.local.set({ [STORAGE_KEY_SETTINGS]: settings });
+      } catch (_) {}
+    } else if (typeof localStorage !== "undefined") {
+      try {
+        localStorage.setItem("tn_settings", JSON.stringify(settings));
+      } catch (_) {}
+    }
     render();
   }
 
-  // Storage listener
-  chrome.storage.onChanged.addListener((changes, area) => {
-    if (area === "local") {
-      let shouldRerender = false;
-      if (changes.serverCodes) {
-        serverCodes = changes.serverCodes.newValue || [];
-        shouldRerender = true;
-      }
-      if (changes.accounts) {
-        const raw = changes.accounts.newValue || [];
-        accounts = raw.map((a) => ({
-          id: a.id,
-          email: a.email || a.label || "",
-          password: a.password || ""
-        }));
-        shouldRerender = true;
-      }
-      if (changes.scratchpad && changes.scratchpad.newValue !== scratchpad) {
-        scratchpad = changes.scratchpad.newValue || "";
-        const textarea = shadow.getElementById("tn-scratchpad-input");
-        if (textarea && textarea !== shadow.activeElement) {
-          textarea.value = scratchpad;
+  // Storage listener (Safely guarded)
+  if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.onChanged) {
+    try {
+      chrome.storage.onChanged.addListener((changes, area) => {
+        if (area === "local") {
+          let shouldRerender = false;
+          if (changes.serverCodes) {
+            serverCodes = changes.serverCodes.newValue || [];
+            shouldRerender = true;
+          }
+          if (changes.accounts) {
+            const raw = changes.accounts.newValue || [];
+            accounts = raw.map((a) => ({
+              id: a.id,
+              email: a.email || a.label || "",
+              password: a.password || ""
+            }));
+            shouldRerender = true;
+          }
+          if (changes.scratchpad && changes.scratchpad.newValue !== scratchpad) {
+            scratchpad = changes.scratchpad.newValue || "";
+            const textarea = shadow.getElementById("tn-scratchpad-input");
+            if (textarea && textarea !== shadow.activeElement) {
+              textarea.value = scratchpad;
+            }
+          }
+          if (changes.settings) {
+            settings = Object.assign(settings, changes.settings.newValue || {});
+            shouldRerender = true;
+          }
+          if (shouldRerender) render();
         }
-      }
-      if (changes.settings) {
-        settings = Object.assign(settings, changes.settings.newValue || {});
-        shouldRerender = true;
-      }
-      if (shouldRerender) render();
-    }
-  });
+      });
+    } catch (_) {}
+  }
 
-  // Background commands
-  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message.action === "TOGGLE_DRAWER") {
-      toggleDrawer();
-      sendResponse({ status: "OK", isOpen: isDrawerOpen });
-      return true;
-    }
-    if (message.action === "OPEN_DRAWER") {
-      toggleDrawer(true);
-      sendResponse({ status: "OK", isOpen: isDrawerOpen });
-      return true;
-    }
-    if (message.action === "CLOSE_DRAWER") {
-      toggleDrawer(false);
-      sendResponse({ status: "OK", isOpen: isDrawerOpen });
-      return true;
-    }
-    if (message.action === "PING") {
-      sendResponse({ status: "PONG", isOpen: isDrawerOpen });
-      return true;
-    }
-  });
+  // Background commands (Safely guarded)
+  if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.onMessage) {
+    try {
+      chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+        if (message.action === "TOGGLE_DRAWER") {
+          toggleDrawer();
+          sendResponse({ status: "OK", isOpen: isDrawerOpen });
+          return true;
+        }
+        if (message.action === "OPEN_DRAWER") {
+          toggleDrawer(true);
+          sendResponse({ status: "OK", isOpen: isDrawerOpen });
+          return true;
+        }
+        if (message.action === "CLOSE_DRAWER") {
+          toggleDrawer(false);
+          sendResponse({ status: "OK", isOpen: isDrawerOpen });
+          return true;
+        }
+        if (message.action === "PING") {
+          sendResponse({ status: "PONG", isOpen: isDrawerOpen });
+          return true;
+        }
+      });
+    } catch (_) {}
+  }
 
   // Clipboard copy helper
   async function copyToClipboard(text, successMsg = "Copied") {
