@@ -111,19 +111,11 @@ async function ensureInjected(tabId) {
       target: { tabId },
       files: ["content/content.js"]
     });
+    return true;
   } catch (err) {
     console.warn("[Tester Notepad] Injection failed on tab:", tabId, err);
     return false;
   }
-
-  for (let i = 0; i < 10; i++) {
-    await new Promise((r) => setTimeout(r, 40));
-    try {
-      const ping = await chrome.tabs.sendMessage(tabId, { action: "PING" });
-      if (ping?.status === "PONG") return true;
-    } catch (_) {}
-  }
-  return false;
 }
 
 /**

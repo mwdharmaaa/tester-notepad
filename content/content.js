@@ -8,7 +8,12 @@
 (function () {
   const ROOT_ID = "tester-notepad-root";
 
-  // Clean up any stale root from prior injection to allow instant seamless re-injection
+  // Clean up any prior global listeners and stale root from prior injection
+  if (typeof window !== "undefined" && window.__TESTER_NOTEPAD_CLEANUP__) {
+    try {
+      window.__TESTER_NOTEPAD_CLEANUP__();
+    } catch (_) {}
+  }
   const existingRoot = document.getElementById(ROOT_ID);
   if (existingRoot) {
     try {
@@ -2062,6 +2067,17 @@
 
   window.addEventListener("keydown", handleGlobalKeydown, true);
   document.addEventListener("keydown", handleGlobalKeydown, true);
+
+  if (typeof window !== "undefined") {
+    window.__TESTER_NOTEPAD_CLEANUP__ = () => {
+      window.removeEventListener("keydown", handleGlobalKeydown, true);
+      document.removeEventListener("keydown", handleGlobalKeydown, true);
+      const oldRoot = document.getElementById(ROOT_ID);
+      if (oldRoot) {
+        try { oldRoot.remove(); } catch (_) {}
+      }
+    };
+  }
 
   // Initialize
   loadData().then(() => {
