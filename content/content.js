@@ -6,10 +6,15 @@
  */
 
 (function () {
-  // Prevent duplicate injection
-  if (document.getElementById("tester-notepad-root")) return;
-
   const ROOT_ID = "tester-notepad-root";
+
+  // Clean up any stale root from prior injection to allow instant seamless re-injection
+  const existingRoot = document.getElementById(ROOT_ID);
+  if (existingRoot) {
+    try {
+      existingRoot.remove();
+    } catch (_) {}
+  }
   const STORAGE_KEY_SERVERS = "serverCodes";
   const STORAGE_KEY_ACCOUNTS = "accounts";
   const STORAGE_KEY_SCRATCHPAD = "scratchpad";
@@ -317,6 +322,21 @@
         margin: 0;
         padding: 0;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      }
+
+      :host {
+        all: initial !important;
+        pointer-events: none !important;
+      }
+
+      .tn-theme-dark,
+      .tn-theme-light {
+        pointer-events: none !important;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 0 !important;
+        height: 0 !important;
       }
 
       /* Floating Button (Pojok Kanan Bawah) */
