@@ -31,7 +31,9 @@
     autofillNotification: true
   };
 
-  let isDrawerOpen = false;
+  let isDrawerOpen =
+    typeof window !== "undefined" &&
+    Boolean(window.location && window.location.search && window.location.search.includes("open=1"));
   let isPinned = false;
   let activeTab = "credentials"; // "credentials", "scratchpad", "generators", "settings"
   let searchQuery = "";
@@ -144,8 +146,18 @@
       sendResponse({ status: "OK", isOpen: isDrawerOpen });
       return true;
     }
+    if (message.action === "OPEN_DRAWER") {
+      toggleDrawer(true);
+      sendResponse({ status: "OK", isOpen: isDrawerOpen });
+      return true;
+    }
+    if (message.action === "CLOSE_DRAWER") {
+      toggleDrawer(false);
+      sendResponse({ status: "OK", isOpen: isDrawerOpen });
+      return true;
+    }
     if (message.action === "PING") {
-      sendResponse({ status: "PONG" });
+      sendResponse({ status: "PONG", isOpen: isDrawerOpen });
       return true;
     }
   });
@@ -252,12 +264,32 @@
   }
 
   let lastToggleTime = 0;
-  function toggleDrawer() {
+  function toggleDrawer(forceState) {
     const now = Date.now();
-    if (now - lastToggleTime < 250) return;
+    if (typeof forceState !== "boolean" && now - lastToggleTime < 300) {
+      return;
+    }
     lastToggleTime = now;
-    isDrawerOpen = !isDrawerOpen;
-    render();
+    if (typeof forceState === "boolean") {
+      isDrawerOpen = forceState;
+    } else {
+      isDrawerOpen = !isDrawerOpen;
+    }
+
+    const drawer = shadow.getElementById("tn-drawer");
+    const trigger = shadow.getElementById("tn-trigger");
+    if (drawer) {
+      if (isDrawerOpen) {
+        drawer.classList.add("tn-open");
+      } else {
+        drawer.classList.remove("tn-open");
+      }
+      if (trigger) {
+        trigger.style.display = settings.floatingIconEnabled && !isDrawerOpen ? "flex" : "none";
+      }
+    } else {
+      render();
+    }
   }
 
   // Dummy Data Generators
@@ -1535,8 +1567,8 @@
           <div class="tn-settings-group">
             <div class="tn-settings-title">Shortcuts</div>
             <div style="font-size: 11px; color: #71717a; line-height: 1.6; font-family: ui-monospace, monospace;">
-              Alt + L : Toggle Drawer<br/>
-              Esc     : Close Drawer
+              Alt + L      : Toggle Drawer (Open/Close)<br/>
+              Toolbar Icon : Toggle Drawer (Open/Close)
             </div>
           </div>
         </div>
@@ -1558,8 +1590,7 @@
     const closeBtn = shadow.getElementById("tn-btn-close");
     if (closeBtn) {
       closeBtn.addEventListener("click", () => {
-        isDrawerOpen = false;
-        render();
+        toggleDrawer(false);
       });
     }
 
@@ -1965,13 +1996,8 @@
       e.keyCode === 76 ||
       e.which === 76 ||
       (typeof e.key === "string" && e.key.toLowerCase() === "l");
-    const isN =
-      e.code === "KeyN" ||
-      e.keyCode === 78 ||
-      e.which === 78 ||
-      (typeof e.key === "string" && e.key.toLowerCase() === "n");
 
-    if (isAlt && (isL || isN)) {
+    if (isAlt && isL) {
       e.preventDefault();
       e.stopPropagation();
       toggleDrawer();

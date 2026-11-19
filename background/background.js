@@ -1,5 +1,5 @@
 // Tester Notepad - Background Service Worker
-// Manages initial data seeding, commands, and in-page drawer toggling on the right
+// Manages initial data seeding, commands, tab messaging, and right-side floating drawer toggling
 
 const DEFAULT_SERVERS = [
   {
@@ -72,11 +72,67 @@ chrome.runtime.onInstalled.addListener(async (details) => {
 });
 
 /**
+ * Check if a URL cannot have content scripts injected by browser security
+ */
+function isRestrictedUrl(url) {
+  if (!url) return true;
+  if (
+    url.startsWith("chrome://") ||
+    url.startsWith("edge://") ||
+    url.startsWith("about:") ||
+    url.startsWith("view-source:") ||
+    url.startsWith("https://chrome.google.com/webstore") ||
+    url.startsWith("https://chromewebstore.google.com")
+  ) {
+    return true;
+  }
+  // Other extensions' internal pages, but NOT our own extension pages
+  if (url.startsWith("chrome-extension://") && !url.startsWith(chrome.runtime.getURL(""))) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Ensure content script is actively ready on tab
+ */
+async function ensureInjected(tabId) {
+  try {
+    const ping = await chrome.tabs.sendMessage(tabId, { action: "PING" });
+    if (ping?.status === "PONG") return true;
+  } catch (_) {}
+
+  try {
+    await chrome.scripting.insertCSS({
+      target: { tabId },
+      files: ["content/content.css"]
+    });
+    await chrome.scripting.executeScript({
+      target: { tabId },
+      files: ["content/content.js"]
+    });
+  } catch (err) {
+    console.warn("[Tester Notepad] Injection failed on tab:", tabId, err);
+    return false;
+  }
+
+  for (let i = 0; i < 10; i++) {
+    await new Promise((r) => setTimeout(r, 40));
+    try {
+      const ping = await chrome.tabs.sendMessage(tabId, { action: "PING" });
+      if (ping?.status === "PONG") return true;
+    } catch (_) {}
+  }
+  return false;
+}
+
+/**
  * Toggle In-Page Floating Drawer on Active Tab
  * - Strictly pinned to the right side of the screen (KANAN, right: 0).
  * - Non-blocking floating overlay on top of the web page (zero layout shift).
  * - Tapping anywhere else outside does NOT dismiss or hide the drawer.
  * - Toggled via Alt+L, toolbar icon click, or in-page trigger button.
+ * - If invoked on internal restricted pages (e.g. chrome://newtab), immediately opens the verification portal tab with drawer open.
  */
 async function toggleActiveTabDrawer(tab) {
   if (!tab) {
@@ -85,39 +141,34 @@ async function toggleActiveTabDrawer(tab) {
   }
   if (!tab?.id) return;
 
-  // Don't inject on restricted internal browser pages
-  if (tab.url && (tab.url.startsWith("chrome://") || tab.url.startsWith("edge://") || tab.url.startsWith("about:"))) {
-    console.warn("[Tester Notepad] Drawer operates on web pages. Restricted page:", tab.url);
+  const testPortalUrl = chrome.runtime.getURL("test/test_page.html?open=1");
+
+  // On restricted browser pages where Chrome blocks content scripts (like chrome://newtab):
+  if (isRestrictedUrl(tab.url)) {
+    if (tab.url && (tab.url.startsWith("chrome://newtab") || tab.url === "about:blank")) {
+      // User is on blank new tab, update it to the test harness page with drawer open!
+      await chrome.tabs.update(tab.id, { url: testPortalUrl });
+    } else {
+      // User is on chrome://extensions or settings, open or switch to test portal
+      const tabs = await chrome.tabs.query({});
+      const existing = tabs.find(t => t.url && t.url.includes("test/test_page.html"));
+      if (existing?.id) {
+        await chrome.tabs.update(existing.id, { active: true });
+        if (existing.windowId) {
+          await chrome.windows.update(existing.windowId, { focused: true });
+        }
+        await chrome.tabs.sendMessage(existing.id, { action: "TOGGLE_DRAWER" }).catch(() => {});
+      } else {
+        await chrome.tabs.create({ url: testPortalUrl });
+      }
+    }
     return;
   }
 
-  // Attempt direct messaging to content script
-  try {
-    const ping = await chrome.tabs.sendMessage(tab.id, { action: "PING" });
-    if (ping?.status === "PONG") {
-      await chrome.tabs.sendMessage(tab.id, { action: "TOGGLE_DRAWER" });
-      return;
-    }
-  } catch (_) {
-    // Content script not ready yet, proceed to inject
-  }
-
-  try {
-    await chrome.scripting.insertCSS({
-      target: { tabId: tab.id },
-      files: ["content/content.css"]
-    });
-    await chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      files: ["content/content.js"]
-    });
-    setTimeout(async () => {
-      try {
-        await chrome.tabs.sendMessage(tab.id, { action: "TOGGLE_DRAWER" });
-      } catch (_) {}
-    }, 60);
-  } catch (injectErr) {
-    console.warn("[Tester Notepad] Dynamic injection failed:", injectErr);
+  // Normal Web Page (http://, https://, file://, or extension test portal)
+  const ready = await ensureInjected(tab.id);
+  if (ready) {
+    await chrome.tabs.sendMessage(tab.id, { action: "TOGGLE_DRAWER" }).catch(() => {});
   }
 }
 
